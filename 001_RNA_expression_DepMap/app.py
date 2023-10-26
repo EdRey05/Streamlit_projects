@@ -7,12 +7,16 @@ Contact:
 DepMap release used: 
     23Q2
 
-Files used: 
-    OmicsExpressionProteinCodingGenesTPMLogp1.csv  (Downloaded as: DepMap_RNASeq_23Q2.csv)
-    Model.csv  (Downloaded as: DepMap_CellInfo_23Q2.csv)
+Data source:
+    Original Website: https://depmap.org/portal/download/all/
+    Note: This website does not provide the direct download links used here. Instead, when clicking 
+          on -View full release details-, it shows some info and references to this Figshare data 
+          repository: https://doi.org/10.6084/m9.figshare.22765112.v2
+    File 1: OmicsExpressionProteinCodingGenesTPMLogp1.csv  (Downloaded as: DepMap_RNASeq_23Q2.csv)
+    File 2: Model.csv  (Downloaded as: DepMap_CellInfo_23Q2.csv)
 
 App version: 
-    V01 (Oct 22, 2023): First working version. Not fully annotated.
+    V02 (Oct 26, 2023): Improved layout, added missing comments and improved download button.
 
 '''
 ###################################################################################################
@@ -23,31 +27,33 @@ import os
 import urllib.request
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 from io import BytesIO
 
 ###################################################################################################
 
-# App two-column layout
+# App configuration and layout (sidebar and main window)
 
 st.set_page_config(
     page_title="Tool 01 - App by Eduardo",
     page_icon=":bar_chart:",
-    layout="wide",
-    menu_items={
-        'Report a bug': 'mailto:eduardo_reyes09@hotmail.com',
-        'About': "# This is a header. This is an *extremely* cool app!"
-    }
-)
+    layout="wide")
 
+# Main window containers
 st.title("Retrieve RNASeq data from DepMap")
+st.write("---")
+col_1_row_1, col_2_row_1 = st.columns([2, 3], gap="medium")
+st.write("---")
+col_1_row_2, col_2_row_2, col_3_row_2, col_4_row_2, col_5_row_2, col_6_row_2 = st.columns(6, gap="small")
+st.write("---")
+col_1_row_3, col_2_row_3 = st.columns(2, gap="medium")
 
-column_01, column_02 = st.columns([2, 3], gap="medium")
-
+# Button to save selected cell lines to an excel file and display widgets for data exploration
+with col_3_row_2:
+    preview_button = st.button(label="Preview results", type="primary")
 
 ###################################################################################################
 
-# Cached function to download and/or read the required files 
+# Cached function to download and/or read the required files just once
 
 @st.cache_data(show_spinner=False)
 def get_files():
@@ -76,15 +82,13 @@ def get_files():
         RNA_expression = pd.read_csv(rna_file)
         sample_IDs = pd.read_csv(cell_info_file)
         
-        # Sort the IDs by cell line name and get the relevant columns to show the user in both search modes 
+        # Sort the IDs by cell line name and get the relevant columns  
         status.update(label="Pre-processing files...")
         sample_IDs = sample_IDs.sort_values(by=["CellLineName"])
         sample_IDs = sample_IDs[sample_IDs["CellLineName"].notna()]
         sample_IDs = sample_IDs.reset_index(drop=True)
         cell_menu = sample_IDs[["ModelID", "CellLineName", "OncotreeLineage", "OncotreePrimaryDisease"]]
         cell_menu.columns = ["Achilles ID", "Cell line", "Tissue", "Disease"]
-        cell_menu_tissues = [""] + list(cell_menu["Tissue"].unique())
-        cell_menu_tissues.sort()
 
         # The first column of the RNASeq dataset has no name, and we need it transposed
         RNA_expression = RNA_expression.set_index("Unnamed: 0").T
@@ -104,35 +108,56 @@ def get_files():
         RNA_expression = RNA_expression.sort_index(axis=1)
         RNA_expression = RNA_expression.sort_index()
 
+        # Since not all the cell lines in the DepMap/Achilles project have RNA Seq data, remove those from both menus
+        cell_menu = cell_menu[cell_menu["Cell line"].isin(RNA_expression.columns)]
+        cell_menu_tissues = [""] + list(cell_menu["Tissue"].unique())
+        cell_menu_tissues.sort()
+
         status.update(label="Ready to begin search!", state="complete", expanded=False)
 
     return RNA_expression, cell_menu, cell_menu_tissues
 
 ###################################################################################################
 
-# Call the function above when the app loads, and use cached variables for all re-runs
+# Function to save the extracted dataframe to Excel
 
-# Check if the data has already been loaded, otherwise download or get them
+def save_to_excel(dataframe, filename='RNA_Results.xlsx'):
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        dataframe.to_excel(writer, index=True, sheet_name='Search_01')
+    output.seek(0)
+
+    return output
+
+###################################################################################################
+
+# Step 1 - Call get_files to download the data or use cached variables 
+
+# Check if the data has already been loaded, otherwise download and import it
 if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
     
     RNA_expression, cell_menu, cell_menu_tissues = get_files()
 
-    # Save data relevant data on the first run
+    # Save heavy data variables to session state so get_files only runs one time
     st.session_state["RNA_expression"] = RNA_expression
     st.session_state["cell_menu"] = cell_menu
     st.session_state["cell_menu_tissues"] = cell_menu_tissues
+
+    # Initialize variables in the session state to enable full widget interactivity
     st.session_state["keep_cells_previous"] = []
     st.session_state["keep_cells_current"] = []
     st.session_state["search_string_temporal"] = ""
     st.session_state["search_results_interactive"] = pd.DataFrame()
 
-#################################################
+###################################################################################################
 
-# Create the widgets for each column
+# Step 2 - Create the main widgets in column 1-row 1, and one more in the same row upon interaction
 
-with column_01:
+# The widgets on the first row are created immediately after loading the files
+with col_1_row_1:
     
-    # Buttons for the two types of search available
+    # Buttons for the two types of cell line search available
     st.radio(key="search_by", label="Search cell lines by:", options=["Name", "Tissue type"])
 
     # This responds to the radio button and displays a different widget depending on the type of search chosen
@@ -154,11 +179,11 @@ with column_01:
 
 # When the default option on Column 01 widgets is selected, just clear this column
 if st.session_state["search_string"] == "":
-    column_02.empty()
+    col_2_row_1.empty()
 # When the string/name searched is not found in the dataset, show recommendations and a warning
 elif search_results.empty:
-    column_02.empty()
-    with column_02:
+    col_2_row_1.empty()
+    with col_2_row_1:
         st.markdown('''
                     :red[No results matched the input entered] :confused:
                     
@@ -166,60 +191,63 @@ elif search_results.empty:
                     
                     :warning: If this problem persists :warning: That cell line may not have been included in the DepMap project, yet :disappointed: :sob:
                     ''')
-# Proceed to create widgets if a valid string and results are obtained
+# Proceed to create widgets if a valid string is entered and a results df is obtained
 else:      
-    # e
-    with column_02:
+    # The widget to select search results takes all col 2-row 2 because its big and resizes itself
+    with col_2_row_1:
         search_results_interactive = st.data_editor(data=search_results, hide_index=True)
     
-    # a
+    # Checking or unchecking a box triggers the re-run of the app
+    # Entering a new search string/term re-runs the app and shows a different df in the editor
+    # Changing the search method and selecting a tissue type also re-runs the app
+    # Because of that, we use 3 variables to keep track of changes through the editor with the same or different search term 
+
+    # Reset the list of previous selections when a new string on the same widget or the other is entered/selected
     if st.session_state["search_string"] != st.session_state["search_string_temporal"]:
         st.session_state["keep_cells_previous"] = []
         st.session_state["search_string_temporal"] = st.session_state["search_string"]
 
+    # Get any rows (cell lines) that have been checked through the data editor
     selected_cells = search_results_interactive.loc[search_results_interactive["Keep cell line?"], "Cell line"].tolist()
+    
+    # Add new values to the current selections or keep the ones that were selected before, to both state variables
     for name in selected_cells:
         if name not in st.session_state["keep_cells_previous"]:
             st.session_state["keep_cells_current"].append(name)
             st.session_state["keep_cells_previous"].append(name)
+
+    # Unchecking a box makes selected_cells shorter so we remove the missing values from both state variables
     for name in st.session_state["keep_cells_previous"]:
         if name not in selected_cells:
             st.session_state["keep_cells_current"].remove(name)
             st.session_state["keep_cells_previous"].remove(name)
 
+    # The cummulative selections + de-selections are kept and sorted
     st.session_state["keep_cells_current"] = sorted(set(st.session_state["keep_cells_current"]))
 
-# Multiselect Widget
-with column_01:
+# A widget is displayed to visually track all user selections (loads empty immediately with other widgets in this col-row)
+with col_1_row_1:
     multiselect_options = [""]+st.session_state["keep_cells_current"]
-    st.multiselect(label="Your selections:", options=multiselect_options, placeholder="", default=st.session_state.get("keep_cells_current", []), key="keep_cells_final")
+    st.multiselect(key="keep_cells_final", label="Your selections:", options=multiselect_options, placeholder="", 
+                   default=st.session_state.get("keep_cells_current", []))
 
 ###################################################################################################
 
-# Previewing and saving the results
+# Step 3 - Extract selected cell lines from the RNA dataset and prepare to preview and download when the user decides to
 
-# Create a function to save DataFrame to Excel
-def save_to_excel(dataframe, filename='RNA_Results.xlsx'):
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        dataframe.to_excel(writer, index=True, sheet_name='Search_01')
-    output.seek(0)
-    return output
+# Trigger file preparation when the button is pressed
+if preview_button:
 
-with column_01:
-    st.button(key="reset_button", label="Start over", type="primary")
-if st.session_state["reset_button"]:
-    column_02.empty()
-    column_01.empty()
-    st.session_state.clear()
+    # Find the current cummulative selections in the pre-processed RNA df
+    st.session_state["extracted_RNA_data"] = st.session_state["RNA_expression"].loc[:, st.session_state["keep_cells_final"]]
+    st.session_state["extracted_RNA_data"] = st.session_state["extracted_RNA_data"].reset_index(drop=False)
+    
+    # Call the function to convert the results df to a xlsx file
+    st.session_state["excel_data"] = save_to_excel(st.session_state["extracted_RNA_data"])
 
-# Save results
-with column_01:
-    save_button = st.button(label="Preview results", type="primary")
-if save_button:
-    extracted_RNA_data = st.session_state["RNA_expression"].loc[:, st.session_state["keep_cells_final"]]
-    extracted_RNA_data = extracted_RNA_data.reset_index(drop=False)
-    st.dataframe(extracted_RNA_data)
+# Display a button to download the results when a file has been made 
+if "excel_data" in st.session_state:
+    with col_4_row_2:
+        st.download_button(label="Download dataset", data=st.session_state["excel_data"], file_name='RNA_Results.xlsx', type="primary")
 
-    excel_data = save_to_excel(extracted_RNA_data)
-    column_01 = st.download_button(label="Download dataset", data=excel_data, file_name='RNA_Results.xlsx')
+###################################################################################################

@@ -1,0 +1,14 @@
+numpy
+pandas
+natsort
+collections
+matplotlib
+plotly
+streamlit
+streamlit-searchbox
+streamlit-option-menu
+streamlit-components
+streamlit-carousel
+openpyxl
+lifelines
+logging

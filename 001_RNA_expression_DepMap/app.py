@@ -16,7 +16,7 @@ Data source:
     File 2: Model.csv  (Downloaded as: DepMap_CellInfo_23Q2.csv)
 
 App version: 
-    V02 (Oct 26, 2023): Improved layout, added missing comments and improved download button.
+    V03 (Oct 29, 2023): Added new feature to preview the results dataset and plot genes of interest.
 
 '''
 ###################################################################################################
@@ -24,9 +24,12 @@ App version:
 # Import the required libraries
 
 import os
+from typing import List
 import urllib.request
 import pandas as pd
+import plotly.express as px
 import streamlit as st
+from streamlit_searchbox import st_searchbox
 from io import BytesIO
 
 ###################################################################################################
@@ -132,6 +135,17 @@ def save_to_excel(dataframe, filename='RNA_Results.xlsx'):
 
 ###################################################################################################
 
+# Function to search through the genes for the preliminary plots
+
+def search_genes(searchterm: str) -> List[tuple[str, str]]:
+    # Assuming st.session_state["gene_list"] is a list of gene names
+    suggestions = [gene for gene in st.session_state["gene_list"] if searchterm.lower() in gene.lower()]
+    
+    # Returning a list of tuples where each tuple contains a label and a value
+    return [(gene, gene) for gene in suggestions]
+
+###################################################################################################
+
 # Step 1 - Call get_files to download the data or use cached variables 
 
 # Check if the data has already been loaded, otherwise download and import it
@@ -149,6 +163,8 @@ if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
     st.session_state["keep_cells_current"] = []
     st.session_state["search_string_temporal"] = ""
     st.session_state["search_results_interactive"] = pd.DataFrame()
+    st.session_state["df_to_plot"] = pd.DataFrame()
+    st.session_state["displayed_df_to_plot"] = pd.DataFrame()
 
 ###################################################################################################
 
@@ -195,7 +211,7 @@ elif search_results.empty:
 else:      
     # The widget to select search results takes all col 2-row 2 because its big and resizes itself
     with col_2_row_1:
-        search_results_interactive = st.data_editor(data=search_results, hide_index=True)
+        search_results_interactive = st.data_editor(data=search_results, hide_index=True, use_container_width=True)
     
     # Checking or unchecking a box triggers the re-run of the app
     # Entering a new search string/term re-runs the app and shows a different df in the editor
@@ -215,7 +231,7 @@ else:
         if name not in st.session_state["keep_cells_previous"]:
             st.session_state["keep_cells_current"].append(name)
             st.session_state["keep_cells_previous"].append(name)
-
+    
     # Unchecking a box makes selected_cells shorter so we remove the missing values from both state variables
     for name in st.session_state["keep_cells_previous"]:
         if name not in selected_cells:
@@ -241,6 +257,11 @@ if preview_button:
     # Find the current cummulative selections in the pre-processed RNA df
     st.session_state["extracted_RNA_data"] = st.session_state["RNA_expression"].loc[:, st.session_state["keep_cells_final"]]
     st.session_state["extracted_RNA_data"] = st.session_state["extracted_RNA_data"].reset_index(drop=False)
+
+    # Prepare the data for preliminary plots
+    st.session_state["gene_list"] = tuple(st.session_state["extracted_RNA_data"]["Gene"].tolist()) 
+    st.session_state["df_to_plot"] = st.session_state["extracted_RNA_data"].copy()   
+    st.session_state["df_to_plot"].insert(0, "Plot?", False)
     
     # Call the function to convert the results df to a xlsx file
     st.session_state["excel_data"] = save_to_excel(st.session_state["extracted_RNA_data"])
@@ -251,3 +272,57 @@ if "excel_data" in st.session_state:
         st.download_button(label="Download dataset", data=st.session_state["excel_data"], file_name='RNA_Results.xlsx', type="primary")
 
 ###################################################################################################
+
+# Step 4 - Show a preview of the results df and a tool to plot gene expression
+
+# Function to make 
+def gene_plotter():
+    plot_genes = st.session_state["displayed_df_to_plot"].loc[st.session_state["displayed_df_to_plot"]["Plot?"], "Gene"].tolist()
+    if plot_genes:
+        # Plot the genes of interest and allow to swap the grouping type
+        with col_2_row_3:
+            st.radio(key="group_by", label="Group expression by", options=["Cell line", "Gene"])
+
+            if st.session_state["group_by"] == "Gene":
+                fig = px.bar(st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)], 
+                         x='Gene', y=st.session_state["extracted_RNA_data"].columns[1:], barmode='group')
+
+                # Customize the appearance of the bars
+                fig.update_traces(marker=dict(line=dict(color='black', width=0.5)), selector=dict(type='bar'))
+                fig.update_layout(xaxis_title="Gene", yaxis_title="log2(TPM+1)", legend_title="Cell Line", font=dict(size=14))
+            else:
+                fig = px.bar(st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)].set_index('Gene').T, barmode='group')
+
+                # Customize the appearance of the bars
+                fig.update_traces(marker=dict(line=dict(color='black', width=0.5)), selector=dict(type='bar'))
+                fig.update_layout(xaxis_title="Cell Line", yaxis_title="log2(TPM+1)", legend_title="Gene", font=dict(size=14))
+            
+            # Other plot customizations and display
+            fig.update_layout(colorway=px.colors.qualitative.D3)
+            st.plotly_chart(fig)
+    else:
+        # Clear plots if no genes are currently selected
+        col_2_row_3.empty()
+
+# Proceed with results visualization only when the data has been extracted
+if not st.session_state["df_to_plot"].empty:
+    
+    # Show a searchbox to quickly find genes as the df has thousands of rows (the user can scroll and check boxes too)
+    with col_1_row_3:
+        st_searchbox(key="selected_gene", search_function=search_genes, default=None, 
+                     label="Type gene names of interest here or scroll and check them below", clear_on_submit=True)
+
+    # When the user selects a gene name, automatically check it to display it at the top of the df
+    if st.session_state["selected_gene"]:
+        selected_gene_result = st.session_state["selected_gene"].get("result")
+        st.session_state["df_to_plot"].loc[st.session_state["df_to_plot"]["Gene"] == selected_gene_result, "Plot?"] = True
+
+    # Show the results df
+    st.session_state["sorted_df"] = st.session_state["df_to_plot"].sort_values(by=["Plot?", "Gene"], ascending=[False, True])
+    with col_1_row_3:
+        st.session_state["displayed_df_to_plot"] = st.data_editor(data=st.session_state["sorted_df"], use_container_width=True, hide_index=True)
+    
+    # Call the function to plot the selected genes (if any)
+    gene_plotter()
+    
+    ###################################################################################################

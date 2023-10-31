@@ -5,8 +5,9 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V01 (Oct 28, 2023): Transferred the main code from the Google Colab notebook. Pending to make
-                        it fully compatible with Streamlit and fill in the info pages.
+    V02 (Oct 31, 2023): Few additional modifications were needed to make a functional version for 
+                        Streamlit. Pending to customize buttons, add a progress/status widget, and 
+                        fill in the text content for the info pages.
 
 '''
 ###################################################################################################
@@ -36,7 +37,7 @@ from pptx.enum.dml import MSO_THEME_COLOR
 ###################################################################################################
 
 # Function to process the input files
-@st.cache
+@st.cache_data
 def process_files():
 
     # Extract all the folder structure and files of the zip file provided by the user
@@ -321,15 +322,19 @@ def load_second_page():
         
         with open(uploaded_file.name, "wb") as f:
             f.write(uploaded_file.getvalue())
-        st.session_state["data_zipfile"] = os.path.dirname(os.path.abspath(uploaded_file.name))
+        st.session_state["data_zipfile"] = os.path.join(os.path.dirname(os.path.abspath(uploaded_file.name)), "Data.zip")
 
         # Process the files to extract the information needed to import to the slide generator
         all_slides_content = process_files()
         generate_pptxs(all_slides_content)
 
         # Display download buttons for each of the two files produced
-        st.download_button(label="Download Threhold file", data=os.path.join(st.session_state["current_directory"],"Summary_results_T.pptx"))
-        st.download_button(label="Download Find Maxima file", data=os.path.join(st.session_state["current_directory"], "Summary_results_FM.pptx"))
+        threholding_file_path = os.path.join(st.session_state["current_directory"], "Summary_results_T.pptx")
+        find_maxima_file_path = os.path.join(st.session_state["current_directory"], "Summary_results_FM.pptx")
+        st.download_button(label="Download Threholding file", key="download_threholding", 
+                           data=open(threholding_file_path, "rb").read(), file_name="Summary_results_T.pptx")
+        st.download_button(label="Download Find Maxima file", key="download_find_maxima", 
+                           data=open(find_maxima_file_path, "rb").read(), file_name="Summary_results_FM.pptx")
 
     return
 
@@ -370,7 +375,7 @@ else:
 st.session_state["current_directory"] = os.path.dirname(os.path.realpath(__file__))
 st.session_state["template_pptx"] = os.path.join(st.session_state["current_directory"], "Template.pptx")
 if not os.path.exists(st.session_state["template_pptx"]):
-    template_dir = "https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/c71427f2538cb20bac348ed0cc1a59d23053cc36/Tools%20for%20students/Eduardo%20Reyes/Template.pptx"
+    template_dir = "https://github.com/EdRey05/Resources_for_Mulligan_Lab/raw/c71427f2538cb20bac348ed0cc1a59d23053cc36/Tools%20for%20students/Eduardo%20Reyes/Template.pptx"
     urllib.request.urlretrieve(template_dir, st.session_state["template_pptx"])
 
 ###################################################################################################

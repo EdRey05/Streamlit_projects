@@ -16,9 +16,7 @@ Data source:
     File 2: Model.csv  (Downloaded as: DepMap_CellInfo_23Q2.csv)
 
 App version: 
-    V04 (Oct 30, 2023): Minimal overall changes. Re-ordered code for better organization and cleaner 
-                        initial layout. Added preview_button control not to load without data.
-                        Fixed gene plot color palettes.
+    V05 (Nov 01, 2023): Modified gene plotter function to add feature to do heatmaps.
 
 '''
 ###################################################################################################
@@ -264,6 +262,7 @@ if "excel_data" in st.session_state:
 
 # Function to search through the genes for the preliminary plots
 def search_genes(searchterm: str) -> List[tuple[str, str]]:
+    
     # Assuming st.session_state["gene_list"] is a list of gene names
     suggestions = [gene for gene in st.session_state["gene_list"] if searchterm.lower() in gene.lower()]
     
@@ -272,30 +271,49 @@ def search_genes(searchterm: str) -> List[tuple[str, str]]:
 
 ###################
 
-# Function to make bar charts based on genes selected by the searchbox and/or data editor 
+# Function to make plots based on genes selected by the searchbox and/or data editor 
 def gene_plotter():
+    
+    # Get any genes currently selected in the data editor
     plot_genes = st.session_state["displayed_df_to_plot"].loc[st.session_state["displayed_df_to_plot"]["Plot?"], "Gene"].tolist()
+    
     if plot_genes:
         # Plot the genes of interest and allow to swap the grouping type
         with col_2_row_3:
-            st.radio(key="group_by", label="Group expression by", options=["Cell line", "Gene"])
+            st.radio(key="plot_type", label="Plot type", options=["Bar chart", "Heatmap"])
+            st.toggle(key="group_by", label="Swap group by")
 
-            if st.session_state["group_by"] == "Gene":
-                fig = px.bar(st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)], 
-                         x='Gene', y=st.session_state["extracted_RNA_data"].columns[1:], barmode='group',
-                         color_discrete_sequence=px.colors.qualitative.Dark2)
+            # Make one of two possible bar charts
+            if st.session_state["plot_type"] == "Bar chart":
+                if st.session_state["group_by"]:
+                    fig = px.bar(st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)], 
+                            x='Gene', y=st.session_state["extracted_RNA_data"].columns[1:], barmode='group',
+                            color_discrete_sequence=px.colors.qualitative.Dark2)
 
-                # Customize the appearance of the bars
-                fig.update_traces(marker=dict(line=dict(color='black', width=0.5)), selector=dict(type='bar'))
-                fig.update_layout(xaxis_title="Gene", yaxis_title="log2(TPM+1)", legend_title="Cell Line", font=dict(size=14))
+                    # Customize the appearance of the bars
+                    fig.update_traces(marker=dict(line=dict(color='black', width=0.5)), selector=dict(type='bar'))
+                    fig.update_layout(xaxis_title="Gene", yaxis_title="log2(TPM+1)", legend_title="Cell Line", font=dict(size=14))
+                else:
+                    fig = px.bar(st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)].set_index('Gene').T, 
+                                barmode='group', color_discrete_sequence=px.colors.qualitative.G10)
+
+                    # Customize the appearance of the bars
+                    fig.update_traces(marker=dict(line=dict(color='black', width=0.5)), selector=dict(type='bar'))
+                    fig.update_layout(xaxis_title="Cell Line", yaxis_title="log2(TPM+1)", legend_title="Gene", font=dict(size=14))
             else:
-                fig = px.bar(st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)].set_index('Gene').T, 
-                             barmode='group', color_discrete_sequence=px.colors.qualitative.G10)
+                # Make a heatmap
+                heatmap_data = st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)].set_index('Gene').T
 
-                # Customize the appearance of the bars
-                fig.update_traces(marker=dict(line=dict(color='black', width=0.5)), selector=dict(type='bar'))
-                fig.update_layout(xaxis_title="Cell Line", yaxis_title="log2(TPM+1)", legend_title="Gene", font=dict(size=14))
-            
+                # Switch rows and columns based on the toggle state
+                if st.session_state["group_by"]:
+                    heatmap_data = heatmap_data.T
+                
+                # Customize the appearance of the heatmap
+                fig = px.imshow(heatmap_data, color_continuous_scale='Cividis')
+                fig.update_layout(xaxis_title="Cell Line" if st.session_state["group_by"] else "Gene", 
+                                  yaxis_title="Gene" if st.session_state["group_by"] else "Cell Line", 
+                                  font=dict(size=14))
+
             # Display plot
             st.plotly_chart(fig)
     else:

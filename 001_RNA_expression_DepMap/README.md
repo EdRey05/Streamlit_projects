@@ -15,4 +15,7 @@ How to use this app:
 11. Bonus - You will see plots appearing in the bottom-right corner. You can choose between a bar chart or a heatmap, and exchange how the bars are grouped or what is in ros/cols in the heatmap.
 12. Bonus - Although the gene expression plots are intended to be for exploratory purposes, you can maximize the dataframe and plot, and even snap pictures from the bar chart and heatmaps! (see demo below).
 
-![](Demo_001.mp4)
+<video width="320" height="240" controls>
+  <source src="Demo_001.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>

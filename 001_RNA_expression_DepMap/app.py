@@ -16,7 +16,9 @@ Data source:
     File 2: Model.csv  (Downloaded as: DepMap_CellInfo_23Q2.csv)
 
 App version: 
-    V05 (Nov 01, 2023): Modified gene plotter function to add feature to do heatmaps.
+    V06 (Nov 03, 2023): Improved layout and added initial message while the files load (with a demo). 
+                        Improved row_3 widget interaction when the df changes and preview_button is 
+                        clicked again.
 
 '''
 ###################################################################################################
@@ -38,7 +40,7 @@ from io import BytesIO
 
 @st.cache_data(show_spinner=False)
 def get_files():
-
+    
     # Show a status bar indicating when each step is completed
     with st.status("Loading...", expanded=False) as status:
 
@@ -95,7 +97,7 @@ def get_files():
         cell_menu_tissues.sort()
 
         status.update(label="Ready to begin search!", state="complete", expanded=False)
-
+        
     return RNA_expression, cell_menu, cell_menu_tissues
 
 ###################################################################################################
@@ -103,13 +105,28 @@ def get_files():
 # Step 1 - Set app configuration and load the required files 
 
 st.set_page_config(
-    page_title="Tool 01 - App by Eduardo",
+    page_title="Tool 001 - App by Eduardo",
     page_icon=":bar_chart:",
-    layout="wide")
+    layout="wide",
+     menu_items={
+        'Get Help': "https://github.com/EdRey05/Streamlit_projects/tree/main/001_RNA_expression_DepMap",
+        'Report a bug': "mailto:eduardo_reyes09@hotmail.com"})
 
 # Check if the data has already been loaded, otherwise download and import it
 if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
     
+    message = st.markdown('''
+        <div style='background-color: #0E6655; padding: 10px; border-radius: 5px; text-align: center; width: 75%; margin: auto;'>
+            <p style='font-size: 20px; font-weight: bold;'>THE FILES ARE BEING PREPARED... The app will launch shortly</p>
+            <p>This app was tailored for the RNA Seq dataset from the DepMap portal, release 23Q2.</p>
+            <p>The file used was OmicsExpressionProteinCodingGenesTPMLogp1.csv and gives values in log2(TPM+1) units.</p>
+            <p>For more information on the 23Q2 data or newer releases, consult: <a href="https://depmap.org/portal/download/all/" target="_blank">DepMap Portal</a>.</p>
+            <p>Tutorial: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/001_RNA_expression_DepMap" target="_blank">Instructions and Demo</a> </p>
+        </div>
+        ''', unsafe_allow_html=True)
+    a = st.divider() 
+
+    # Start downloading or importing the files
     RNA_expression, cell_menu, cell_menu_tissues = get_files()
 
     # Save heavy data variables to session state so get_files only runs one time
@@ -125,16 +142,21 @@ if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
     st.session_state["df_to_plot"] = pd.DataFrame()
     st.session_state["displayed_df_to_plot"] = pd.DataFrame()
 
+    # Clear the initial message
+    message.empty()
+    a.empty()
+
 ###################################################################################################
 
 # Step 2 - Create app layout
 
-st.title("Retrieve RNASeq data from the DepMap portal")
-st.write("---")
+st.title("Retrieve RNASeq data from the DepMap portal (23Q2)")
+st.divider()
 col_1_row_1, col_2_row_1 = st.columns([2, 3], gap="medium")
-st.write("---")
+st.divider()
 col_1_row_2, col_2_row_2, col_3_row_2, col_4_row_2, col_5_row_2, col_6_row_2 = st.columns(6, gap="small")
-st.write("---")
+st.divider()
+st.divider()
 col_1_row_3, col_2_row_3 = st.columns(2, gap="medium")
 
 ###################################################################################################
@@ -146,6 +168,7 @@ with col_1_row_1:
     
     # Buttons for the two types of cell line search available
     st.radio(key="search_by", label="Search cell lines by:", options=["Name", "Tissue type"])
+    st.divider()
 
     # This responds to the radio button and displays a different widget depending on the type of search chosen
     if st.session_state["search_by"] == "Name":
@@ -163,6 +186,8 @@ with col_1_row_1:
         search_results = st.session_state["cell_menu"].copy()
         search_results["Keep cell line?"] = False
         search_results = search_results[search_results["Tissue"] == st.session_state["search_string"]]
+    
+    st.divider()
 
 # When the default option on Column 01 widgets is selected, just clear this column
 if st.session_state["search_string"] == "":
@@ -239,6 +264,11 @@ with col_3_row_2:
     preview_button = st.button(label="Preview results", type="primary")
 
 if preview_button and st.session_state["keep_cells_final"]:
+
+    # Clean previous gene selections and plots
+    col_2_row_3.empty()
+    col_1_row_3.empty()
+
     # Find the current cummulative selections in the pre-processed RNA df
     st.session_state["extracted_RNA_data"] = st.session_state["RNA_expression"].loc[:, st.session_state["keep_cells_final"]]
     st.session_state["extracted_RNA_data"] = st.session_state["extracted_RNA_data"].reset_index(drop=False)
@@ -282,6 +312,7 @@ def gene_plotter():
         with col_2_row_3:
             st.radio(key="plot_type", label="Plot type", options=["Bar chart", "Heatmap"])
             st.toggle(key="group_by", label="Swap group by")
+            st.divider()
 
             # Make one of two possible bar charts
             if st.session_state["plot_type"] == "Bar chart":
@@ -292,14 +323,14 @@ def gene_plotter():
 
                     # Customize the appearance of the bars
                     fig.update_traces(marker=dict(line=dict(color='black', width=0.5)), selector=dict(type='bar'))
-                    fig.update_layout(xaxis_title="Gene", yaxis_title="log2(TPM+1)", legend_title="Cell Line", font=dict(size=14))
+                    fig.update_layout(xaxis_title="Gene", yaxis_title="log2(TPM+1)", legend_title="Cell Line", font=dict(size=24))
                 else:
                     fig = px.bar(st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)].set_index('Gene').T, 
                                 barmode='group', color_discrete_sequence=px.colors.qualitative.G10)
 
                     # Customize the appearance of the bars
                     fig.update_traces(marker=dict(line=dict(color='black', width=0.5)), selector=dict(type='bar'))
-                    fig.update_layout(xaxis_title="Cell Line", yaxis_title="log2(TPM+1)", legend_title="Gene", font=dict(size=14))
+                    fig.update_layout(xaxis_title="Cell Line", yaxis_title="log2(TPM+1)", legend_title="Gene", font=dict(size=24))
             else:
                 # Make a heatmap
                 heatmap_data = st.session_state["extracted_RNA_data"][st.session_state["extracted_RNA_data"]['Gene'].isin(plot_genes)].set_index('Gene').T
@@ -312,9 +343,10 @@ def gene_plotter():
                 fig = px.imshow(heatmap_data, color_continuous_scale='Cividis')
                 fig.update_layout(xaxis_title="Cell Line" if st.session_state["group_by"] else "Gene", 
                                   yaxis_title="Gene" if st.session_state["group_by"] else "Cell Line", 
-                                  font=dict(size=14))
+                                  font=dict(size=24))
 
             # Display plot
+            fig.update_layout(height=400, width=600)
             st.plotly_chart(fig)
     else:
         # Clear plots if no genes are currently selected
@@ -328,12 +360,16 @@ if not st.session_state["df_to_plot"].empty:
     # Show a searchbox to quickly find genes as the df has thousands of rows (the user can scroll and check boxes too)
     with col_1_row_3:
         st_searchbox(key="selected_gene", search_function=search_genes, default=None, 
-                     label="Type gene names of interest here or scroll and check them below", clear_on_submit=True)
-
+                     label="Type a gene name here or check/uncheck boxes below", clear_on_submit=True,)
+        st.divider()
+    
     # When the user selects a gene name, automatically check it to display it at the top of the df
-    if st.session_state["selected_gene"]:
+    if st.session_state["selected_gene"].get("result"):
         selected_gene_result = st.session_state["selected_gene"].get("result")
         st.session_state["df_to_plot"].loc[st.session_state["df_to_plot"]["Gene"] == selected_gene_result, "Plot?"] = True
+        
+        # Reset the searchbox so we dont keep the previous result when the df changes
+        st.session_state["selected_gene"] = {"result": None, "search": "", "options_js": []}
 
     # Show the results df
     st.session_state["sorted_df"] = st.session_state["df_to_plot"].sort_values(by=["Plot?", "Gene"], ascending=[False, True])

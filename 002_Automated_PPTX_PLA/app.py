@@ -5,8 +5,8 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V03 (Nov 02, 2023): Reordered parts of the code to make it more organized. Improved app layout
-                        and transferred info text from the Colab notebook version to here.
+    V04 (Nov 09, 2023): Fixed path handling so it works on / and \ systems. Improved download 
+                        buttons so they do not dissapear anymore.
 
 '''
 ###################################################################################################
@@ -38,7 +38,7 @@ from pptx.enum.dml import MSO_THEME_COLOR
 # App main layout and page loading
 
 st.set_page_config(
-    page_title="Tool 01 - App by Eduardo",
+    page_title="Tool 002 - App by Eduardo",
     page_icon=":newspaper:",
     layout="wide")
 
@@ -90,8 +90,9 @@ def process_files():
 
     # Make list with names and paths of the experimental conditions (according to the number of csv files found above)
     exp_conditions_info = []
+    
     for csv_file in all_csv_files:
-        csv_root_folder = csv_file.split("Data/")[1].split("/Quantification")[0]
+        csv_root_folder = os.path.normpath(csv_file.split("Data")[1].split("Quantification")[0])[1:]
         exp_conditions_info.append([csv_root_folder, csv_file])
 
     # We will store all the information of the images to insert to the ppt here
@@ -119,7 +120,8 @@ def process_files():
             ROI_title = condition_info[0]
             ROI_subtitle = row["Image used"]
             ROI_name = str(row["Cell quantified"])
-            ROI_Fluorescence_image = condition_info[1].replace("Quantification/Results.csv", "Cropped cells/Fluorescence/"+ROI_subtitle+"/"+ROI_name+"_2.jpg")
+            ROI_Fluorescence_image = condition_info[1].replace(os.path.join("Quantification", "Results.csv"), 
+                                        os.path.join("Cropped cells", "Fluorescence", ROI_subtitle, ROI_name+"_2.jpg"))
             ROI_Tcount_image = ROI_Fluorescence_image.replace("Fluorescence", "T_Particles").replace("_2.jpg", "_1.jpg")
             ROI_Tcount = row["Particle count threshold"]
             ROI_FMcount_image = ROI_Fluorescence_image.replace("Fluorescence", "FM_Particles").replace("_2.jpg", "_1.jpg")
@@ -347,10 +349,10 @@ def load_first_page():
 
     # Display a button so the user decides when to start (in case uploaded the incorrect file)
     with col_1_row_1:
-        start_button = st.button(label="Generate pptx", type="primary")
+        st.session_state["start_button"] = st.button(label="Generate pptx", type="primary")
     
     # Proceed only when the button to start is pressed and a compressed file has been uploaded
-    if start_button and uploaded_file:
+    if st.session_state["start_button"] and uploaded_file:
         
         with open(uploaded_file.name, "wb") as f:
             f.write(uploaded_file.getvalue())
@@ -363,12 +365,20 @@ def load_first_page():
         # Display download buttons for each of the two files produced
         threholding_file_path = os.path.join(st.session_state["current_directory"], "Summary_results_T.pptx")
         find_maxima_file_path = os.path.join(st.session_state["current_directory"], "Summary_results_FM.pptx")
+        
+        st.session_state["path1"] = threholding_file_path
+        st.session_state["path2"] = find_maxima_file_path
+    
+    # Show the buttons to download the files as long as there are pptxs made
+    if "path1" in st.session_state:
         with col_2_row_1:
-            st.download_button(label="Download Threholding file", key="download_threholding", 
-                               data=open(threholding_file_path, "rb").read(), file_name="Summary_results_T.pptx")
+            st.session_state["download1"] = st.download_button(label="Download Threholding file", 
+                               data=open(st.session_state["path1"], "rb").read(), 
+                               file_name="Summary_results_T.pptx")
         with col_3_row_1:
-            st.download_button(label="Download Find Maxima file", key="download_find_maxima", 
-                               data=open(find_maxima_file_path, "rb").read(), file_name="Summary_results_FM.pptx")
+            st.session_state["download2"] = st.download_button(label="Download Find Maxima file",  
+                                            data=open(st.session_state["path2"], "rb").read(), 
+                                            file_name="Summary_results_FM.pptx")
 
     return
 

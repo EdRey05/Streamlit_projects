@@ -5,8 +5,8 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V04 (Nov 09, 2023): Fixed path handling so it works on / and \ systems. Improved download 
-                        buttons so they do not dissapear anymore.
+    V05 (Dec 02, 2023): Customized the second and third app pages and reviewed their information.
+                        Fixed path bug giving wrong slide titles.
 
 '''
 ###################################################################################################
@@ -42,19 +42,21 @@ st.set_page_config(
     page_icon=":newspaper:",
     layout="wide")
 
-st.title("Pptx generator for PLA results")
+st.markdown(''' 
+            # <span style="color: #bf9000"> PPTX generator for PLA results </span>
+            ''', unsafe_allow_html=True)
 st.write("---")
 
 # Make a menu of pages on the siderbar, since the app is simple but requires lots of specific details
 with st.sidebar:
-    selected_page = option_menu("Main Menu", ["Generate pptx", "How to use the app", "Info on pptx design"], 
+    selected_page = option_menu("App Menu", ["Generate pptx", "How to use this app", "Info on pptx design"], 
         icons=["filetype-pptx", "patch-question-fill", "columns-gap"], menu_icon="cast", default_index=0)
 
 # Check the selected app page and call the corresponding function to display its content
 def change_pages():
     if selected_page == "Generate pptx":
         load_first_page()
-    elif selected_page == "How to use the app":
+    elif selected_page == "How to use this app":
         load_second_page()
     else:
         load_third_page() 
@@ -92,7 +94,7 @@ def process_files():
     exp_conditions_info = []
     
     for csv_file in all_csv_files:
-        csv_root_folder = os.path.normpath(csv_file.split("Data")[1].split("Quantification")[0])[1:]
+        csv_root_folder = os.path.normpath(csv_file).split(os.path.sep + "Data" + os.path.sep)[1].split(os.path.sep + "Quantification")[0]
         exp_conditions_info.append([csv_root_folder, csv_file])
 
     # We will store all the information of the images to insert to the ppt here
@@ -389,80 +391,152 @@ def load_first_page():
 def load_second_page():
     
     st.markdown('''
-                ## Function of the notebook
+                ## <span style="color: #0a6640;"> Purpose of this app </span>
 
-                This notebook takes any number of Proximity Ligation Assay (PLA) images that were cropped 
-                and quantified, and prepares a summary Power Point presentation with the results of the 
-                experiment. In the presentation we will find:
+                <span style="color: #CE9178">
 
-                1. Slides for each experimental condition / group (separated), and also separated based 
-                on the original image they were croped from (if big images were taken with multiple cells, 
-                the same condition will have multiple cells/ROIs originated from the same original image).
+                This app takes a compressed file with any number of **Proximity Ligation Assay (PLA)** 
+                images that were cropped and quantified (see requirements), and prepares a summary 
+                Power Point presentation with the results. The slides show for each image:
 
-                2. Each slide shows pairs of fluorescence images of the cells selected with their ROI name 
-                and next to it there is the corresponding image of the quantification of puncta for that 
-                ROI and the label corresponds to the number of puncta given by the method used (Find Maxima 
-                or Threshold).
+                <span style="color: #CCCCCC;">
+                1. The Fluorescence image used to quantify, with their name below.
+                <br><br>
+                2. The Particle mask image obtained during the quantification, with their counts below.
+                </span>
+                <br> <br>
 
-                3. The key is that we can quickly preview in one single file all the cell morphologies we 
-                picked to analyze, and verify the numbers match what we would expect just looking at the 
-                puncta in the cell by eye. If the cells look too bad in the fluorescence images, we can 
-                find the number that corresponds to that cell in the results file and discard it. Also, we 
-                can evaluate the work of the quantification methods since all the black noise in those 
-                quantification images correspond to ignored pixels (didn't meet the criteria) and only the 
-                coloured ones were quantified. Controls should have barely any black or coloured particles 
-                in the images (and thus low number P=), but the other conditions were we look for 
-                interactions may have or not more black noise, coloured puncta, and numbers that match with 
-                what our eyes can see.
+                The idea is that we can quickly preview in one single file all the cell morphologies we 
+                picked to analyze, and verify whether the particle counts obtained match what we would 
+                expect. This way, we can quickly identify when the selected parameters for quantification 
+                produce more/less particles than what we observe in the original fluorescence image. 
+                
+                By using the PPTX, we can quickly review all the images and quantification results side 
+                by side without having to open hundreds of individual images and trackig their names and
+                quantification results from the output Excel file.
+                
+                In addition, we can compare two different quantification approaches (Thresholding vs Find 
+                Maxima), and identify possible issues such as:
+                
+                <span style="color: #CCCCCC;"> - Noisy fluorescent images. </span>
 
-                ''')
+                <span style="color: #CCCCCC;"> - More particles identified than expected.</span>
+
+                <span style="color: #CCCCCC;"> - Less particles identified than expected.</span>
+
+                <span style="color: #CCCCCC;"> - Particles identified seem fine but there are several
+                                        black/not coloured (didn't meet criteria to be counted). </span>
+                
+                These and other problems can be easily identified with the help of the summary PPTX and 
+                either lead to the selection of a quantification approach (Thresholding or Find Maxima),
+                or prompt the user to repeat the quantiication step with different parameters. The most
+                common fixes to these issues include changing: thresholding method, prominence value, 
+                particle size + circularity, rolling radius of background subtraction, etc.
+
+                </span>
+                ''', unsafe_allow_html=True)
     
     st.write("---")
     
     st.markdown('''
-                ## Requirements of the notebook
+                ## <span style="color: #0a6640;"> Requirements </span>
 
-                Since this notebook was created specifically to generate a results report for experiments of 
-                the author's PLA experiments, the requirements are just to upload a new pptx file with a 
-                blank slide (just empty), making sure to click in Power Point: Design-> Slide Size -> 
-                Widescreen (16:9), and the compressed zip file called "Data", which should contain all the 
+                <span style="color: #CE9178">
+
+                This app was created specifically to generate a result's report for experiments of the
+                author's PLA experiments, the only requirement is to upload a compressed zip file. The
+                file must not be heavier than 500 MB (if so, you can edit the config.toml file).
+                Alternatively, you can make multiple compressed files (all named "Data.zip") and run
+                the app for each of them separately.
+                
+                The quantification is done using the following script for ImageJ/Fiji, which is part 
+                of a workflow so it also requires specific image + folder structures:
+                [PLA Quantification Script]( 
+                https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/b80eaf75d35665aeb4b7e60ed85685f342d9f125/Tools%20for%20PLA%20quantification/PLA_quantification.py)
+
+                To create the zip file, it is recommended to first create a "Data" folder, then create
+                a subfolder for each experimental condition to include, transfer to each subfolder the
+                required files and finally compress the "Data" folder into a .zip file. This way, the
+                zip file will be called "Data" and contain a "Data" folder, which should contain the
                 following:
 
-                1. A folder called "Data" (1st level).
+                </span>
+                <span style="color: #CCCCCC;"> 
 
-                2. Any number of subfolders (2nd level) corresponding to each experimental condition that you 
-                want to include in the same summary presentation.
+                1. Any number of subfolders corresponding to each experimental condition to include in
+                the PPTX.  
 
-                3. Each 2nd level subfolder can have a unique name, but their content should have the same 
-                structure: 2 folders (3rd level), one called "Cropped cells", and the other "Quantification". 
-                Both of these were produced from the processed images by the author's script V03: 
-                https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/b80eaf75d35665aeb4b7e60ed85685f342d9f125/Tools%20for%20PLA%20quantification/PLA_quantification.py
+                2. Each condition subfolder has a unique name, but they all should have the same
+                content: 1 folder called "Cropped cells", and 1 folder called "Quantification". Both
+                of these are produced by the quantification script. 
 
-                4. The Cropped cells folder contains 3 folders (4th level) called "Fluorescence", "FM_Particles", 
-                and "T_Particles". They all have subfolders with the names Row_01_05... to Row_45_51 on the 5th 
-                level. The Fluorescence folder has ROIs (6th level) of cells in the form of "Number_2.jpg" and 
-                the other 2 folders "Number_1.jpg", which refer to the same cell (one ROI used to make the 
-                presentation, other to quantify).
+                3. The "Cropped cells" folder should contain 3 folders: "Fluorescence", "FM_Particles", 
+                and "T_Particles". Each of these should have subfolders with the names Row_01_05... to 
+                Row_45_51. The "Fluorescence" folder contains ROIs for individual cells with an ID number
+                ("Number_2.jpg"). The "FM_Particles" and "T_Particles" folders have the same content of
+                a different set of ROIs with an ID number ("Number_1.jpg").
 
-                5. The Quantification folder (4th level) has only one csv file with the results of the 
+                4. The "Quantification" folder should only have a csv file with the results of the 
                 quantification.
-    
-                ''')
+
+                </span>
+                <span style="color: #CE9178">
+
+                Here you can find an example zip file that contains the folders and files mentioned above
+                for a few experimental conditions of a real PLA experiment (the download button is on the
+                right side, between the "Raw" button and the pencil button):
+                [Example zip file](
+                https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/caf95fc217cb1c65b4a0b28449c84b35ec10e2fe/Tools%20for%20students/Eduardo%20Reyes/Data.zip)
+                
+                </span>
+                
+                ''', unsafe_allow_html=True)
     
     st.write("---")
 
     st.markdown('''
-                ## Outputs of the script
+                ## <span style="color: #0a6640;"> Outputs </span>
+                
+                <span style="color: #CE9178">
 
-                The current version of this notebook produces 2 pptx files, one using the fluorescence images + 
-                the find maxima images, and the second one using the same fluorescence images but with the 
-                thresholded images. Ideally, we would want to examine both to check which works better, since 
-                under ideal conditions both give very similar results, but raw image quality and processing 
-                can create some differences within a condition or experiment so using the same threshold method 
-                will cause a lot of artifacts in some images (find maxima uses a different principle, more 
-                insensitive to these variability).
-    
-                ''')
+                The current version of this notebook produces 2 .pptx files, one using the fluorescence 
+                images + the particle mask images prouced by the ***Find Maxima*** approach, and the 
+                second one using the fluorescence images + the particle mask images produced by the 
+                ***Thresholding*** approach. 
+                
+                Ideally, we would want to examine both to check which quantification approach works 
+                better for the experiment of interest. Under ideal conditions both approaches give very
+                similar results. However, the fluorescence image quality is the main factor that 
+                influences the results provided by both approaches, which use different principles to
+                find the particles.
+
+                For these reasons, we want not only to compare both PPTX summaries, but it is also
+                crucial to evaluate consistency in particle detection within each PPTX. Some experimental
+                conditions may have more/less background noise or number of particles than other
+                conditions, and this may lead to incorrect particle detection and quantification for
+                some conditions but not for others. However, the quantification and results report 
+                generation are fully automated so that both parts of the workflow can be easily repeated
+                to find the most appropriate quantification parameters for each condition and each 
+                experiment.
+
+                Furthermore, this app automatically detects experimental conditions and organizes the 
+                slides as follows:  
+                
+                <span style="color: #CCCCCC;">
+                -Each experimental condition is shown in a separate slide. Up to 20 pairs of cell images
+                can fill each slide. If more slides are needed for a condition, they will all have the 
+                same title (top-left).   
+                <br><br>
+                -If big images containing multiple cells were acquired for each condition, 
+                subfolders for each those are created during the quantification. The app identifies
+                this and makes multiple slides with the same title, but different subtitle (top-right).
+                <br><br>
+                <b>NOTE:</b> If you want to see the format of these PPTX presentations, download the 
+                example zip file (link above) and run the app with it.
+                </span> 
+
+                </span>
+                ''', unsafe_allow_html=True)
     return
 
 ###################################################################################################
@@ -473,147 +547,243 @@ def load_third_page():
     
 
     st.markdown('''
-            <div style='background-color: lightblue; padding: 10px; border-radius: 5px;'>
-
-                Making this setup of automated generation of Power Point presentations is possible 
-                using the ***python-pptx*** library, for which parameters need to be defined, 
-                coordinates to place our objects of interest and their sizes need to be calculated. 
-                For more information on this library, see:  https://pypi.org/project/python-pptx/
-
+            <div style='background-color: #0E6655; padding: 10px; border-radius: 5px; 
+                        text-align: center; width: 75%; margin: auto;'>
+                <p > Automating the generation of Power Point presentations with our layout is done 
+                using the <b>python-pptx</b> library. <br><br>
+                For more information on this library, see: 
+                <a href="https://pypi.org/project/python-pptx/"> python-pptx (Pypi) </a> </p>
             </div>
                 ''', unsafe_allow_html=True)
-
+    st.divider()
 
     st.markdown('''
-                ## Parameters defined to insert the images on the slides
+                ## <span style="color: #7a3db5;"> Parameters to define </span>
 
-                The specific coordinates of all the elements desired in the slides were previously tested 
-                on a pptx by manually arranging the images with the intended number of rows, columns, 
-                images per slide, labels, text boxes and a size adequate to gain enough insight of the 
-                results while keeping the number of slides as low as possible. Once all the intended 
-                content for a single slide was set into approximate position, all the sizes were 
-                calculated and set to precise numbers in order to make it reproducible and iterable. 
+                <span style="color: #CE9178">
 
-                ''')
+                The specific coordinates <b>(in centimeters)</b> for all the desired elements in the
+                slides were previously tested by manually arranging images with the intended number
+                of rows, columns, images per slide, labels, and text boxes. The size of the elements
+                was adjusted to provide sufficient insight into the results while minimizing the 
+                number of slides. Once the approximate position of all the content on a single slide
+                was set, precise measurements were calculated and applied to ensure reproducibility
+                and ease of iteration. 
+                
+                </span>
+
+                ''', unsafe_allow_html=True)
     
     # Diplay the images of the slide coordinates
-    col_1_row_1, col_2_row_1 = st.columns([1, 1], gap="small")
-    with col_1_row_1:
+    a, img1_container, b = st.columns([0.5, 9, 0.5], gap="small")
+    with img1_container:
         st.image(image="https://github.com/EdRey05/Streamlit_projects/raw/main/002_Automated_PPTX_PLA/Automated_PPTX_goal.jpg",
-                 caption="Desired slide layout", use_column_width=True,)
-    with col_2_row_1:
+                 caption="Desired slide layout (Title = experimental condition, Subtitle = Image, Image name = ROI name, P = particle count)", 
+                 use_column_width=True, )
+        
+    st.markdown('''
+                <span style="color: #CE9178">
+
+                Once the images and text of interest were arranged, the coordinates for each space
+                that the objects would fit into were measured as follows. <b>NOTE:</b> That required
+                to resize the images and few look stretched in an axis due to their original aspect
+                ratio (this can be customized for other experiments depending on the shape and aspect
+                ratio of the images).
+
+                </span>
+
+                ''', unsafe_allow_html=True)
+    
+    c, img2_container, d = st.columns([0.5, 9, 0.5], gap="small")
+    with img2_container:
         st.image(image="https://github.com/EdRey05/Streamlit_projects/raw/main/002_Automated_PPTX_PLA/Automated_PPTX_coordinates.jpg",
-                 caption="Coordinates for each desred object", use_column_width=True)
+                 caption="Coordinates for each desired object (x, y)", 
+                 use_column_width=True,)
             
     st.markdown('''
+                <span style="color: #CE9178">
+
                 All the parameters illustrated above are the following:
 
-                1. Slides of 16:9 ratio (34cm width, 19cm height, all measurement units set to cm).
+                </span>
+                <span style="color: #CCCCCC;">
 
-                2. Two titles at the very top, their text boxes of 17cm width and 1.5cm height each, 
-                side by side with no separation from the top corners. Title bold font, subtitle normal 
-                font, and both Times New Roman size 32 points).
+                1. <b>Slide ratio:</b> Use a 16:9 ratio (34cm width, 19cm height - all measurements
+                 are given in cm).
 
-                3. Below the title+subtitle, there is a 0.6cm space to the first row of images, so the 
-                first row starts at X, 2.1cm (X = distance from the left edge).
+                2. <b>Title and subtitle:</b> Two titles at the top, side by side inside a text box
+                of 17cm width, and 1.5cm height (right at the top corners). The title has bold Times
+                New Roman font, size 32 points, whereas the subtitle has normal Times New Roman font,
+                size 32.
 
-                4. Each image will be resized to 3.25cm width by 3cm height. The pairs consist of a 
-                fluorescence image on the left side and a particle analysis on the right side, with no 
-                space separating them.
+                3. <b>Titles separator:</b> Below the title and subtitle text boxes, there is a 0.6cm
+                vertical space to the first row of images.
 
-                5. There are 0.25cm separating each pair (5 pairs per row, 4 pairs per column, total 
-                20 pairs/cells = 40 images per slide), and also 0.25cm separating the first and last 
-                pair of a row from the edges of the slide.
+                4. <b>Image size:</b> Each image is resized to 3.25cm width by 3cm height. The pairs
+                (yellow + green rectangles) come from the same cell (region of interest). The 
+                fluorescence image is on the left side and the particle mask image is on the right
+                side, with no space separating them horizontally.
 
-                6. There is a text box right under each image (the borders touch). For the fluorescence 
-                image the text refers to the name of the ROI analyzed, whereas the particle image shows 
-                the count of particles for that particular cell so we can quickly inspect whether all 
-                the coloured particles coincide with the actual puncta we see in the fluorescence image 
-                and the final count (or if there was an error due to the quantification process). This 
-                text boxes are 3.25cm width by 1cm height, contain Times New Roman text size 20 points.
+                5. <b>Image labels:</b> There is a 3.25cm width by 1cm height text box right under 
+                each image. The text is normal Times New Roman font, size 20 points. The text of the
+                fluorescence image indicates the name of the .roi file quantified for that image (so
+                we can find it for any purpose). The text of the particle mask image indicates the
+                count of particles for that particular region of interest. We should evaluate whether
+                the number matches what we see in the fluorescence image, and whether there are
+                more/less coloured and black (uncounted) particles in the mask than expected. 
 
-                7. The second row is separated 0.3cm from the bottom edge of the labels mentioned in 6. 
-                Same for the third and fourth row (which almost ends at the very edge of the slide).
+                6. <b>Image pair separation:</b> There are 5 pairs of images per row, 4 pairs per
+                column = 20 pairs of original+quantified images (cells or regions of interest). All
+                pairs of images are separated by other pairs both horizontally and vertically by 0.25cm.
 
-                **Note:** The image and label coordinates are declared in a list of tuples (coordinates 
-                can't change for this notebook), so we can iterate through the images grouped per slide 
-                (1-20) and only use the required coordinates (we don't need to iterate 20 times all the 
-                time if the slides only have few images, it is better to iterate per image in the slide 
-                and use the index to find its corresponding coordinates). The filling order will be left 
-                to right, top-down. Since the fluorescence and particle images both come from the same 
-                cell, their names will be "1_2.jpg" and "1_1.jpg", respectively, so the tuple of 
-                coordinates consists of 4 elements: the first is the distance from the left edge of the 
-                slide for the fluorescence image, the second is the distance from the top edge of the 
-                slide for the fluorescence image, the third is the distance from the left edge of the 
-                slide for the particle image, and the fourth is the distance from the top edge of the 
-                slide for the particle image. This way, we can use the same ROI name to get both images 
-                by replacing part of the directory and the "_2.jpg" for "_1.jpg", however, the index in 
-                the for loop will be the same, since we have the coordinates of both images in the same 
-                element of the list (tuple of 4 coordinates).
+                7. <b>Image filling order:</b> The images are filled left to right, top-down. They
+                appear in the csv file sorted alphabetically, but we inserted them into the slides in
+                natural sorting order (more intuitive).
 
-                ''')
+                8. <b>Additional details:</b> Due to the size of the slide and the indicated sizes and
+                coordinates, the last row finishes very close from the bottom of the slide, and the 
+                last column finishes very close from the right side of the slide (may not be visible as
+                the text boxes have no fill and the right side picture has white background).
+                
+                </span>
+                <span style="color: #CE9178">
+
+                **Notes:** 
+                
+                * Since the fluorescence and particle mask images come from the same cell/region of
+                interest, their names are the same but have a different number aft the underscore:
+                "100_2.jpg" and "100_1.jpg", respectively.
+
+                * The specific image and label coordinates are hardcoded in tuples (see snippet below).
+
+                * The tuple of coordinates consists of 4 elements: the first is the distance from the
+                left edge of the slide for the fluorescence image, the second is the distance from the
+                top edge of the slide for the fluorescence image, the third is the distance from the
+                left edge of the slide for the particle image, and the fourth is the distance from the
+                top edge of the slide for the particle image. This way, we can use the same ROI name to
+                get both images by replacing part of the directory and the "_2.jpg" for "_1.jpg",
+                however, the index in the for loop will be the same, since we have the coordinates of
+                both images in the same element of the list (tuple of 4 coordinates).
+
+                </span>
+
+                ''', unsafe_allow_html=True)
+    
+    snippet = '''
+                # All coordinates are stated always in the same order: From left first, from top second.
+
+                # Title text box dimensions and coordinates (centimeters) 
+                title_width = 17
+                title_height = 1.5
+                title_left_coordinate = 0
+                title_top_coordinate = 0
+                
+                # Subtitle text box dimensions and coordinates (centimeters)
+                subtitle_width = 17
+                subtitle_height = 1.5
+                subtitle_left_coordinate = 17
+                subtitle_top_coordinate = 0
+                
+                # Size and coordinates for the 20 pairs of images (centimeters)
+                image_width = 3.25
+                image_height = 3
+                image_coordinates = [
+                (0.25, 2.1, 3.5, 2.1),   (7, 2.1, 10.25, 2.1),   (13.75 , 2.1, 17, 2.1),  (20.5, 2.1, 23.75, 2.1),    (27.25, 2.1, 30.5, 2.1),
+                (0.25, 6.4, 3.5, 6.4),   (7, 6.4, 10.25, 6.4),   (13.75, 6.4, 17, 6.4),   (20.5, 6.4, 23.75, 6.4),    (27.25, 6.4, 30.5, 6.4),
+                (0.25, 10.7, 3.5, 10.7), (7, 10.7, 10.25, 10.7), (13.75, 10.7, 17, 10.7), (20.5, 10.7, 23.75, 10.7),  (27.25, 10.7, 30.5, 10.7),
+                (0.25, 15, 3.5, 15),     (7, 15, 10.25, 15),     (13.75, 15, 17, 15),     (20.5, 15, 23.75, 15),      (27.25, 15, 30.5, 15)
+                ]
+                
+                # Size and coordinates for the 20 pairs of text labels (centimeters) (+3cm top coordinate of images)
+                image_labels_width = 3.25
+                image_labels_height = 1
+                image_labels_coordinates = [
+                (0.25, 5.1, 3.5, 5.1),   (7, 5.1, 10.25, 5.1),   (13.75 , 5.1, 17, 5.1),  (20.5, 5.1, 23.75, 5.1),    (27.25, 5.1, 30.5, 5.1),
+                (0.25, 9.4, 3.5, 9.4),   (7, 9.4, 10.25, 9.4),   (13.75, 9.4, 17, 9.4),   (20.5, 9.4, 23.75, 9.4),    (27.25, 9.4, 30.5, 9.4),
+                (0.25, 13.7, 3.5, 13.7), (7, 13.7, 10.25, 13.7), (13.75, 13.7, 17, 13.7), (20.5, 13.7, 23.75, 13.7),  (27.25, 13.7, 30.5, 13.7),
+                (0.25, 18, 3.5, 18),     (7, 18, 10.25, 18),     (13.75, 18, 17, 18),     (20.5, 18, 23.75, 18),      (27.25, 18, 30.5, 18)
+                ] 
+            '''
+    e, snippet_container, f = st.columns([1, 8, 1], gap="small")
+    with snippet_container:
+        st.code(snippet, language="python")
     
     st.write("---")
 
     st.markdown('''
-                ## Potato
+                ## <span style="color: #7a3db5;"> Overview of the processing strategy </span>
 
-                * Unzip the "Data.zip" file to make a "Data" folder, over which we can iterate/walk 
+                <span style="color: #CCCCCC;">
+
+                1. Unzip the "Data.zip" file to make a "Data" folder, over which we can iterate/walk 
                 through.
                 
-                * Once the folder is ready, look for the csv results file of each experimental 
-                condition (1 per folder/condition), in which we have a collection of most of the 
-                information we need.
+                2. Once the "Data" folder is ready, get all the folders inside as these are the 
+                experimental conditions or groups. Each
+                
+                3. For each Group folder, there must be a Group/Quantification/results.csv file.
 
-                * We know that the number of csv's found is the same number of experimental conditions 
+                4. We know that the number of csv files found is the same number of experimental conditions 
                 we need to iterate through. We get their paths, names, and we already know the folder 
-                structure where the images are located: **content->Data->ExpCondition->Cropped cells->** , 
+                structure where the images are located: **Data/ExpCondition/Cropped cells/** , 
                 which contains 3 subfolders: **Fluorescence, FM_Particles, and T_Particles**
 
-                * Once we know the number of experimental condition folders, we will iterate through any 
-                number of them to extract the information of all the images analyzed.
+                5. Once we know the number of experimental condition folders, we will iterate through any 
+                number of them to extract the information of all the images.
 
-                * Since the csv files already contain almost all the information we need (subtitle, ROI 
-                names, T particle could and FM particle count), we will iterate through the rows of the 
+                6. Since the csv files already contain almost all the information we need (subtitle, ROI 
+                names, T particle count and FM particle count), we will iterate through the rows of the 
                 csv file instead of walking through the directory of fluorescence images (we could also 
                 extract the info from the path but we would need multiple steps to split different 
                 sections of the path). This strategy also allows us to easily convert the ROI names into 
-                integers so we can sort them properly (natural sorting, the ouput of the quantification 
-                script is not in the correct order).
+                integers so we can sort them properly (natural sorting, the csv file is not in this 
+                order).
 
-                Now we have a huge list containing all the info for all the images uploaded by the user. 
-                The next step is to group these images, following a few rules:
+                </span>
+                <span style="color: #CE9178">
 
-                1. The main idea is to pass 20 images to the function that makes the slides.
+                Up to this step, we will have a huge list containing all the info for all the images
+                uploaded by the user. The next steps are to group these images to know which ones go 
+                together into the same slide, following a few rules:
+                
+                </span>
+                <span style="color: #CCCCCC;">
 
-                2. We start with the first experimental condition (title of slide), first subfolder of 
+                * The main idea is to pass 20 images to the function that makes the slides.
+
+                * We start with the first experimental condition (title of slide), first subfolder of 
                 the original image (like Row_01_05, which is the subtitle), and then we see how many 
                 cells/ROIs were quantified there.
 
-                3. If we have exactly 20 (unlikely), we just make one slide. If we have less than 20, we 
+                * If we have exactly 20 (unlikely), we just make one slide. If we have less than 20, we 
                 also make one slide and leave empty spots. If we have more than 20 images, we take the 
                 first 20, make one slide, take the next (up-to) 20 using the same title and subtitle, 
                 make a new slide and so on, until we don't have more images in that subfolder.
 
-                4. To accomplish this strategy, we need to iterate through the list generated above 
+                * To accomplish this strategy, we need to iterate through the list generated above 
                 (all_info_for_slides), in which all the information for all the images of all the 
                 conditions is side by side. Because of that, we can iterate through the same level of 
                 the list, take the info of the current item/element, and add its content to a new 
                 temporary variable (list) with 20 spots available. Before adding the info of the current 
                 item/element, we check whether the 20 spots have been filled, check whether the title 
                 has changed, and check whether the subtitle has changed. Any of those 3 cases triggers 
-                the jump to a new slide so we have to pass the grouped image info from the temporary 
-                variable to a final variable, clear the temporary variable content and then add the 
-                current image info to the new slide group. Finally, we repeat this process over and over 
-                until we have checked all the items/elements, and the final variable, product of this 
-                loop, will contain all the image information separated/grouped by images that will go 
-                together in a single power point slide.
+                the immediate jump to a new slide so we have to pass the info of the grouped images
+                from the temporary variable to a final variable, clear the temporary variable content
+                and then add the current image info to the new slide group. Finally, we repeat this
+                process over and over until we have checked all the items/elements, and the final
+                variable, product of this loop, will contain all the image information grouped by 
+                slide.
 
-                5. With the final variable we will be able to iterate through each element=slide, call 
-                the function that makes the slides, and pass the current element information to insert 
-                the images for that slide.
+                * With the final variable we will be able to iterate through each element (slide), call 
+                the function that makes the slides, and pass the current information of the images to
+                insert to the slide. We do this over and over until we have made a slide for all groups
+                of images specified, and finally we save the presentation. We do this twice, once for
+                the images with Thresholding, and once for the images with Find Maxima (info for both
+                sets of images and counts is contained in the same variable all_info_for _slides.
 
-                ''')
+                </span>
+
+                ''', unsafe_allow_html=True)
     return
 
 ###################################################################################################

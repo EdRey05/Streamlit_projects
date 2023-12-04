@@ -8,4 +8,4 @@ How to use this app:
 4. Click the button "Generate pptx"
 5. Wait for the two buttons to download the presentations to appear (this may take few seconds or several minutes depending on how many images are in Data.zip).
 
-https://github.com/EdRey05/Streamlit_projects/assets/62916582/7b6542cb-488f-4c74-a7e8-33dc92110de5
+https://github.com/EdRey05/Streamlit_projects/assets/62916582/0f02fd9b-488d-4349-8bfd-1eacdfc1fdd8

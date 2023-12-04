@@ -1,5 +1,5 @@
 
-# Demo of the app 002_Automated_PPTX_PLA V05
+# Demo of the app 002_Automated_PPTX_PLA V06
 
 How to use this app:
 1. Open in with an IDE such as Visual Studio Code or through Github Codespaces (an icon for that is the main folder Streamlit_projects).

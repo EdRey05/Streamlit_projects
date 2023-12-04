@@ -5,8 +5,8 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V05 (Dec 02, 2023): Customized the second and third app pages and reviewed their information.
-                        Fixed path bug giving wrong slide titles.
+    V06 (Dec 04, 2023): Implemented a way to prepare 1 or 2 pptx in case only one approach (T or FM)
+                        was used to quantify, or both. Added progress widgets, and improved dividers.
 
 '''
 ###################################################################################################
@@ -45,7 +45,7 @@ st.set_page_config(
 st.markdown(''' 
             # <span style="color: #bf9000"> PPTX generator for PLA results </span>
             ''', unsafe_allow_html=True)
-st.write("---")
+st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
 
 # Make a menu of pages on the siderbar, since the app is simple but requires lots of specific details
 with st.sidebar:
@@ -72,8 +72,8 @@ def change_pages():
 
 # Function to process the input files
 
-@st.cache_data
-def process_files():
+@st.cache_data(show_spinner=False)
+def process_files(T_and_FM):
 
     # Extract all the folder structure and files of the zip file provided by the user
     with ZipFile(st.session_state["data_zipfile"], 'r') as zip:
@@ -111,12 +111,14 @@ def process_files():
         results_table["Image used"] = results_table["Image used"].str.replace(".tif","")
         results_table["Cell quantified"] = results_table["Cell quantified"].str.replace("_1.roi","")
         results_table["Cell quantified"] = results_table["Cell quantified"].apply(int)
-        results_table["Particle count threshold"] = results_table["Particle count threshold"].apply(int)
-        results_table["Particle count maxima"] = results_table["Particle count maxima"].apply(int)
+        if T_and_FM == "Both" or T_and_FM == "Thresholding only":
+            results_table["Particle count threshold"] = results_table["Particle count threshold"].apply(int)
+        if T_and_FM == "Both" or T_and_FM == "Find Maxima only":
+            results_table["Particle count maxima"] = results_table["Particle count maxima"].apply(int)
         results_table = results_table.sort_values(by=["Image used", "Cell quantified"],ignore_index=True)
 
         # Iterate through the rows of the csv file (ROIs/cells quantified)
-        for index, row in results_table.iterrows():
+        for _,row in results_table.iterrows():
             
             # Retrieve all the relevant information for that row
             ROI_title = condition_info[0]
@@ -124,10 +126,23 @@ def process_files():
             ROI_name = str(row["Cell quantified"])
             ROI_Fluorescence_image = condition_info[1].replace(os.path.join("Quantification", "Results.csv"), 
                                         os.path.join("Cropped cells", "Fluorescence", ROI_subtitle, ROI_name+"_2.jpg"))
-            ROI_Tcount_image = ROI_Fluorescence_image.replace("Fluorescence", "T_Particles").replace("_2.jpg", "_1.jpg")
-            ROI_Tcount = row["Particle count threshold"]
-            ROI_FMcount_image = ROI_Fluorescence_image.replace("Fluorescence", "FM_Particles").replace("_2.jpg", "_1.jpg")
-            ROI_FMcount = row["Particle count maxima"]
+            # For now the image and counts will be set to None when only one approach is used (new feature)
+            # This allows us to use the same code in the function that makes the slides 
+            if T_and_FM == "Thresholding only":
+                ROI_Tcount_image = ROI_Fluorescence_image.replace("Fluorescence", "T_Particles").replace("_2.jpg", "_1.jpg")
+                ROI_Tcount = row["Particle count threshold"]
+                ROI_FMcount_image = None
+                ROI_FMcount = None
+            elif T_and_FM == "Find Maxima only":
+                ROI_Tcount_image = None
+                ROI_Tcount = None
+                ROI_FMcount_image = ROI_Fluorescence_image.replace("Fluorescence", "FM_Particles").replace("_2.jpg", "_1.jpg")
+                ROI_FMcount = row["Particle count maxima"]
+            else:
+                ROI_Tcount_image = ROI_Fluorescence_image.replace("Fluorescence", "T_Particles").replace("_2.jpg", "_1.jpg")
+                ROI_Tcount = row["Particle count threshold"]
+                ROI_FMcount_image = ROI_Fluorescence_image.replace("Fluorescence", "FM_Particles").replace("_2.jpg", "_1.jpg")
+                ROI_FMcount = row["Particle count maxima"]
 
             all_info_for_slides.append([ROI_title, ROI_subtitle, ROI_Fluorescence_image, ROI_name, ROI_Tcount_image, ROI_Tcount, ROI_FMcount_image, ROI_FMcount])
 
@@ -164,53 +179,81 @@ def process_files():
 
 # Function to generate the presentations and pass the slide maker the content it should insert 
 
-def generate_pptxs(all_slides_content):
+def generate_pptxs(all_slides_content, T_and_FM):
 
-    # This will make two presentations, one for the Thresholding and one for the Find Maxima methods
+    # This function makes a presentation for the Thresholding and Find Maxima approaches
+    # If only one approach was used, this function will make only one presentation
 
-    # Open the presentation uploaded by the user
-    presentation_T = Presentation(st.session_state["template_pptx"])
+    st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
+    col_1_row_3, col_2_row_3= st.columns([1, 1], gap="medium")
 
-    # Iterate through the image info grouped by slide
-    for slide_content in all_slides_content:
+    # Check if we need to generate a presentation for the Thresholding approach
+    if T_and_FM == "Both" or T_and_FM == "Thresholding only":
 
-        # Prepare the parameters we need to pass to the function that makes the slides
-        current_slide_title = slide_content[0][0]
-        current_slide_subtitle = slide_content[0][1]
-        image_count_for_slide = len(slide_content)
-        F_images_for_slide = [image[2] for image in slide_content]
-        F_images_labels = [image[3] for image in slide_content]
-        P_images_for_slide = [image[4] for image in slide_content]
-        P_images_labels = [image[5] for image in slide_content]
+        # Open the presentation uploaded by the user
+        presentation_T = Presentation(st.session_state["template_pptx"])
 
-        # Feed the function that makes the slide and inserts the corresponding images
-        presentation_T = slide_maker(presentation_T, current_slide_title, current_slide_subtitle, image_count_for_slide, 
-                                     F_images_for_slide, P_images_for_slide, F_images_labels, P_images_labels)
+        # Initialize the progress bar
+        with col_1_row_3:
+            T_progress = st.progress(0, text='Making Thresholding presentation...')
 
-    # Finally, save this summary presentation after all slides have been created
-    presentation_T.save(os.path.join(st.session_state["current_directory"], "Summary_results_T.pptx"))
+        # Iterate through the image info grouped by slide
+        for i,slide_content in enumerate(all_slides_content):
 
-    # Open the presentation uploaded by the user
-    presentation_FM = Presentation(st.session_state["template_pptx"])
+            # Prepare the parameters we need to pass to the function that makes the slides
+            current_slide_title = slide_content[0][0]
+            current_slide_subtitle = slide_content[0][1]
+            image_count_for_slide = len(slide_content)
+            F_images_for_slide = [image[2] for image in slide_content]
+            F_images_labels = [image[3] for image in slide_content]
+            P_images_for_slide = [image[4] for image in slide_content]
+            P_images_labels = [image[5] for image in slide_content]
 
-    # Iterate through the image info grouped by slide
-    for slide_content in all_slides_content:
+            # Feed the function that makes the slide and inserts the corresponding images
+            presentation_T = slide_maker(presentation_T, current_slide_title, current_slide_subtitle, image_count_for_slide, 
+                                        F_images_for_slide, P_images_for_slide, F_images_labels, P_images_labels)
 
-        # Prepare the parameters we need to pass to the function that makes the slides
-        current_slide_title = slide_content[0][0]
-        current_slide_subtitle = slide_content[0][1]
-        image_count_for_slide = len(slide_content)
-        F_images_for_slide = [image[2] for image in slide_content]
-        F_images_labels = [image[3] for image in slide_content]
-        P_images_for_slide = [image[6] for image in slide_content]
-        P_images_labels = [image[7] for image in slide_content]
+            # Update the progress bar
+            with col_1_row_3:
+                T_progress.progress((i+1)/len(all_slides_content), text=f'Making Thresholding presentation (slide {i+1} of {len(all_slides_content)})')
+
+        # Finally, save this summary presentation after all slides have been created
+        presentation_T.save(os.path.join(st.session_state["current_directory"], "Summary_results_T.pptx"))
+
+    #####
+
+    # Check if we need to generate a presentation for the Find Maxima approach
+    if T_and_FM == "Both" or T_and_FM == "Find Maxima only":
+
+        # Open the presentation uploaded by the user
+        presentation_FM = Presentation(st.session_state["template_pptx"])
         
-        # Feed the function
-        presentation_FM = slide_maker(presentation_FM, current_slide_title, current_slide_subtitle, image_count_for_slide, 
-                                      F_images_for_slide, P_images_for_slide, F_images_labels, P_images_labels)
+        # Initialize the progress bar
+        with col_2_row_3:
+            FM_progress = st.progress(0, text='Making Find Maxima presentation...')
 
-    # Finally, save this summary presentation after all slides have been created
-    presentation_FM.save(os.path.join(st.session_state["current_directory"], "Summary_results_FM.pptx"))
+        # Iterate through the image info grouped by slide
+        for i,slide_content in enumerate(all_slides_content):
+
+            # Prepare the parameters we need to pass to the function that makes the slides
+            current_slide_title = slide_content[0][0]
+            current_slide_subtitle = slide_content[0][1]
+            image_count_for_slide = len(slide_content)
+            F_images_for_slide = [image[2] for image in slide_content]
+            F_images_labels = [image[3] for image in slide_content]
+            P_images_for_slide = [image[6] for image in slide_content]
+            P_images_labels = [image[7] for image in slide_content]
+            
+            # Feed the function
+            presentation_FM = slide_maker(presentation_FM, current_slide_title, current_slide_subtitle, image_count_for_slide, 
+                                        F_images_for_slide, P_images_for_slide, F_images_labels, P_images_labels)
+
+            # Update the progress bar
+            with col_2_row_3:
+                FM_progress.progress((i+1)/len(all_slides_content), text=f'Making Find Maxima presentation (slide {i+1} of {len(all_slides_content)})')
+
+        # Finally, save this summary presentation after all slides have been created
+        presentation_FM.save(os.path.join(st.session_state["current_directory"], "Summary_results_FM.pptx"))
 
 ###################################################################################################
 
@@ -342,42 +385,57 @@ def slide_maker(presentation_input, current_slide_title, current_slide_subtitle,
 
 def load_first_page():
     
-    # Show the user a widget to upload the compressed file
-    uploaded_file = st.file_uploader("Upload compressed file", type=["zip"], accept_multiple_files=False)
-    st.write("---")
+    # Create columns for better layout of the buttons 
+    col_1_row_1, col_2_row_1 = st.columns([3, 1], gap="large")
+    st.markdown('<hr style="margin-top: +15px; margin-bottom: +15px;">', unsafe_allow_html=True)
+    col_1_row_2, col_2_row_2, col_3_row_2 = st.columns([1, 1, 1], gap="medium")
 
-    #Create columns for better layout of the buttons
-    col_1_row_1, col_2_row_1, col_3_row_1 = st.columns([1, 1, 1], gap="medium")
+    # Show the user a widget to upload the compressed file
+    with col_1_row_1:
+        uploaded_file = st.file_uploader("Upload compressed file", type=["zip"], accept_multiple_files=False)
+    
+    # Display a radio button to choose which quantification approach was used
+    with col_2_row_1:
+        T_and_FM = st.radio(label="Quantification approach used:", 
+                            options=["Both","Thresholding only", "Find Maxima only"],
+                            index=0,)
 
     # Display a button so the user decides when to start (in case uploaded the incorrect file)
-    with col_1_row_1:
+    with col_1_row_2:
         st.session_state["start_button"] = st.button(label="Generate pptx", type="primary")
     
     # Proceed only when the button to start is pressed and a compressed file has been uploaded
     if st.session_state["start_button"] and uploaded_file:
         
+        # Initialize the progress tracker
         with open(uploaded_file.name, "wb") as f:
             f.write(uploaded_file.getvalue())
         st.session_state["data_zipfile"] = os.path.join(os.path.dirname(os.path.abspath(uploaded_file.name)), "Data.zip")
 
         # Process the files to extract the information needed to import to the slide generator
-        all_slides_content = process_files()
-        generate_pptxs(all_slides_content)
-
-        # Display download buttons for each of the two files produced
-        threholding_file_path = os.path.join(st.session_state["current_directory"], "Summary_results_T.pptx")
-        find_maxima_file_path = os.path.join(st.session_state["current_directory"], "Summary_results_FM.pptx")
+        all_slides_content = process_files(T_and_FM)
+        generate_pptxs(all_slides_content, T_and_FM)
         
-        st.session_state["path1"] = threholding_file_path
-        st.session_state["path2"] = find_maxima_file_path
+        # Check if we need to prepare the path for the Thresholding presentation
+        if T_and_FM == "Both" or T_and_FM == "Thresholding only":
+            threholding_file_path = os.path.join(st.session_state["current_directory"], "Summary_results_T.pptx")
+            st.session_state["path1"] = threholding_file_path
+
+        # Check if we need to prepare the path for the Find Maxima presentation
+        if T_and_FM == "Both" or T_and_FM == "Find Maxima only":    
+            find_maxima_file_path = os.path.join(st.session_state["current_directory"], "Summary_results_FM.pptx")
+            st.session_state["path2"] = find_maxima_file_path
     
-    # Show the buttons to download the files as long as there are pptxs made
+    # Show the download button if there is a Thresholding pptx -this way the button persists across reruns
     if "path1" in st.session_state:
-        with col_2_row_1:
+        with col_2_row_2:
             st.session_state["download1"] = st.download_button(label="Download Threholding file", 
                                data=open(st.session_state["path1"], "rb").read(), 
                                file_name="Summary_results_T.pptx")
-        with col_3_row_1:
+
+    # Show the download button if there is a Thresholding pptx -this way the button persists across reruns
+    if "path2" in st.session_state:
+        with col_3_row_2:
             st.session_state["download2"] = st.download_button(label="Download Find Maxima file",  
                                             data=open(st.session_state["path2"], "rb").read(), 
                                             file_name="Summary_results_FM.pptx")
@@ -436,7 +494,7 @@ def load_second_page():
                 </span>
                 ''', unsafe_allow_html=True)
     
-    st.write("---")
+    st.divider()
     
     st.markdown('''
                 ## <span style="color: #0a6640;"> Requirements </span>
@@ -492,7 +550,7 @@ def load_second_page():
                 
                 ''', unsafe_allow_html=True)
     
-    st.write("---")
+    st.divider()
 
     st.markdown('''
                 ## <span style="color: #0a6640;"> Outputs </span>
@@ -708,7 +766,7 @@ def load_third_page():
     with snippet_container:
         st.code(snippet, language="python")
     
-    st.write("---")
+    st.divider()
 
     st.markdown('''
                 ## <span style="color: #7a3db5;"> Overview of the processing strategy </span>

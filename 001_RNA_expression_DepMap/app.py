@@ -16,9 +16,7 @@ Data source:
     File 2: Model.csv  (Downloaded as: DepMap_CellInfo_23Q2.csv)
 
 App version: 
-    V06 (Nov 03, 2023): Improved layout and added initial message while the files load (with a demo). 
-                        Improved row_3 widget interaction when the df changes and preview_button is 
-                        clicked again.
+    V07 (Dec 05, 2023): Minor design/layout improvements.
 
 '''
 ###################################################################################################
@@ -124,7 +122,7 @@ if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
             <p>Tutorial: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/001_RNA_expression_DepMap" target="_blank">Instructions and Demo</a> </p>
         </div>
         ''', unsafe_allow_html=True)
-    a = st.divider() 
+    a = st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True) 
 
     # Start downloading or importing the files
     RNA_expression, cell_menu, cell_menu_tissues = get_files()
@@ -151,12 +149,11 @@ if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
 # Step 2 - Create app layout
 
 st.title("Retrieve RNASeq data from the DepMap portal (23Q2)")
-st.divider()
+st.markdown('<hr style="margin-top: +5px; margin-bottom: +5px;">', unsafe_allow_html=True)
 col_1_row_1, col_2_row_1 = st.columns([2, 3], gap="medium")
-st.divider()
+st.markdown('<hr style="margin-top: +10px; margin-bottom: +15px;">', unsafe_allow_html=True)
 col_1_row_2, col_2_row_2, col_3_row_2, col_4_row_2, col_5_row_2, col_6_row_2 = st.columns(6, gap="small")
-st.divider()
-st.divider()
+st.markdown('<hr style="margin-top: +5px; margin-bottom: +10px;">', unsafe_allow_html=True)
 col_1_row_3, col_2_row_3 = st.columns(2, gap="medium")
 
 ###################################################################################################
@@ -168,7 +165,7 @@ with col_1_row_1:
     
     # Buttons for the two types of cell line search available
     st.radio(key="search_by", label="Search cell lines by:", options=["Name", "Tissue type"])
-    st.divider()
+    st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
 
     # This responds to the radio button and displays a different widget depending on the type of search chosen
     if st.session_state["search_by"] == "Name":
@@ -187,7 +184,7 @@ with col_1_row_1:
         search_results["Keep cell line?"] = False
         search_results = search_results[search_results["Tissue"] == st.session_state["search_string"]]
     
-    st.divider()
+    st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
 
 # When the default option on Column 01 widgets is selected, just clear this column
 if st.session_state["search_string"] == "":
@@ -312,7 +309,7 @@ def gene_plotter():
         with col_2_row_3:
             st.radio(key="plot_type", label="Plot type", options=["Bar chart", "Heatmap"])
             st.toggle(key="group_by", label="Swap group by")
-            st.divider()
+            st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
 
             # Make one of two possible bar charts
             if st.session_state["plot_type"] == "Bar chart":
@@ -361,7 +358,7 @@ if not st.session_state["df_to_plot"].empty:
     with col_1_row_3:
         st_searchbox(key="selected_gene", search_function=search_genes, default=None, 
                      label="Type a gene name here or check/uncheck boxes below", clear_on_submit=True,)
-        st.divider()
+        st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
     
     # When the user selects a gene name, automatically check it to display it at the top of the df
     if st.session_state["selected_gene"].get("result"):

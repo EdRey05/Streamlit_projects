@@ -5,14 +5,11 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V01 (Dec 09, 2023): First partial version of the Interactive_KM_plotter.ipynb notebook adapted
-                        to Streamlit (see below). Part of the functionality of the final version 
-                        of the notebook (V04) has been transformed (widget layout, time to event
-                        widgets+outputs, event observation widgets+outputs), but part of the code
-                        has not been transformed yet (subgrouping widgets+outputs, KM plotting).
+    V02 (Dec 10, 2023): Second partial version of the app. The plotting with no subgrouping has 
+                        been transformed to work in the Streamlit app, as well as the plot
+                        customizations. It is still pending to transform the option to create
+                        multiple subgroups, to save the plot + dataset, and to review the logging.
 
-Jupyter notebook used as reference (V04):
-https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/caf95fc217cb1c65b4a0b28449c84b35ec10e2fe/Tools%20for%20KM%20plots/Interactive_KM_plotter.ipynb
 '''
 ###################################################################################################
 
@@ -21,12 +18,13 @@ https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/caf95fc217cb1c65b4a0b
 import os
 import numpy as np
 import pandas as pd
+import openpyxl 
 from collections import OrderedDict
 import streamlit as st
+from streamlit_searchbox import st_searchbox
 import altair as alt
 import plotly.express as px
 import matplotlib.pyplot as plt
-import openpyxl 
 from lifelines import KaplanMeierFitter
 from lifelines.plotting import add_at_risk_counts
 import logging
@@ -218,6 +216,8 @@ def widget_preparation():
     time_to_event_options = st.session_state.get("time_to_event_options")
     event_observation_options = st.session_state.get("event_observation_options")
     logger = st.session_state.get("logger")
+    if "disable_saving" not in st.session_state:
+        st.session_state["disable_saving"] = True
 
     logger.info(f"---------------User interaction with the widgets starts here--------------- \n")
 
@@ -227,33 +227,11 @@ def widget_preparation():
     st.markdown('<hr style="margin-top: -15px; margin-bottom: -15px;">', unsafe_allow_html=True)
     col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3 = st.columns([2, 2, 1.35, 1.15], gap="medium")
     st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
-    col_1_row_4, col_2_row_4, col_3_row_4 = st.columns([1, 1, 1], gap="medium")
-    col_1_row_5, col_2_row_5 = st.columns([3, 1], gap="medium")
-    col_1_row_6, col_2_row_6, col_3_row_6 = st.columns([1, 1, 1], gap="medium")
-    col_1_row_7, col_2_row_7 = st.columns([3, 1], gap="medium")
-    col_1_row_8, col_2_row_8, col_3_row_8 = st.columns([1, 1, 1], gap="medium")
-    col_1_row_9, col_2_row_9 = st.columns([3, 1], gap="medium")
-    col_1_row_10, col_2_row_10, col_3_row_10 = st.columns([1, 1, 1], gap="medium")
-    col_1_row_11, col_2_row_11 = st.columns([3, 1], gap="medium")
-    col_1_row_12, col_2_row_12, col_3_row_12 = st.columns([1, 1, 1], gap="medium")
-    col_1_row_13, col_2_row_13 = st.columns([3, 1], gap="medium")
-    col_1_row_14 = st.container()
 
     # Save the columns and containers in the session state
     widget_and_output_areas = [col_1_row_1, col_2_row_1,
                                col_1_row_2, col_2_row_2,
-                               col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3,
-                               col_1_row_4, col_2_row_4, col_3_row_4,
-                               col_1_row_5, col_2_row_5,
-                               col_1_row_6, col_2_row_6, col_3_row_6,
-                               col_1_row_7, col_2_row_7,
-                               col_1_row_8, col_2_row_8, col_3_row_8,
-                               col_1_row_9, col_2_row_9,
-                               col_1_row_10, col_2_row_10, col_3_row_10,
-                               col_1_row_11, col_2_row_11,
-                               col_1_row_12, col_2_row_12, col_3_row_12,
-                               col_1_row_13, col_2_row_13,
-                               col_1_row_14]
+                               col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3]
     st.session_state["widget_and_output_areas"] = widget_and_output_areas
     
     # Time to event widget and callback function
@@ -270,22 +248,30 @@ def widget_preparation():
     if event_observation_dropdown:
         event_observation_dropdown_handler(event_observation_dropdown)
 
-    # Generate+save plot widget, customization auxiliary widgets and callback functions
+    # Show widgets to generate+save the plot (with their callback functions), and to customize it
     with st.sidebar:
-        st.markdown('<hr style="margin-top: +1px; margin-bottom: +1px;">', unsafe_allow_html=True)
+        st.markdown('<hr style="margin-top: 1px; margin-bottom: 1px;">', unsafe_allow_html=True)
         generate_plot_button = st.button(label="Generate plot", type="primary")
-        save_button = st.button(label="Save plot", type="primary", disabled=True, 
+        save_button = st.button(label="Save plot", type="primary", disabled=st.session_state["disable_saving"], 
                                 help="This button is disabled until you generate a plot")
-        st.markdown('<hr style="margin-top: +1px; margin-bottom: +1px;">', unsafe_allow_html=True)
+        st.markdown('<hr style="margin-top: 1px; margin-bottom: 1px;">', unsafe_allow_html=True)
+        
+        # Customize the plot
+        st.write("#### Customize your plot here  ⬇️⬇️⬇")
         CI_checkbox = st.checkbox(label="Show Confidence Intervals", value=True)
-        plot_labels_checkbox = st.checkbox(label="Move legend to the side", value=False)
+        move_labels_checkbox = st.checkbox(label="Move legend to the side", value=False)
         at_risk_checkbox = st.checkbox(label="Show at-risk table", value=False)
+        sample_percent_slider = st.slider(label="Datapoints to plot (%)", min_value=50, max_value=100, value=95)
     if generate_plot_button:
         pass_KM_parameters()
     if save_button:
         save_KM_results()
     
-
+    # Add the plot customization options to the session state and save button to enable it later
+    st.session_state["CI_checkbox"] = CI_checkbox
+    st.session_state["move_labels_checkbox"] = move_labels_checkbox
+    st.session_state["at_risk_checkbox"] = at_risk_checkbox
+    st.session_state["sample_fraction"] = sample_percent_slider / 100
 
     #################################
 
@@ -297,7 +283,7 @@ def widget_preparation():
     #                           'variables_combobox' : widgets.Combobox(options=list(df_RNA.columns[1:]), placeholder='Type gene of interest here', 
     #                                                                   description='Genes:') if df_RNA is not None else None,
     #                           'subgroup_number_slider' : widgets.IntSlider(min=1, max=10, description='Groups:', value=1) 
-    #                           } for i in range(5)]      
+    #                           } for i in range(5)]
 
     # # Create 5 subwidget output areas (one per area above)
     # subgroup_output_areas = [{'subgroup_options_selection_info' : Output(), 
@@ -467,59 +453,6 @@ def event_observation_dropdown_handler(change):
 
 ###################################################################################################
 
-# Function to display the output of variable_number_slider (widget+output areas)
-def variable_number_slider_handler(change):
-    st.write("Feature pending :( ")
-    return
-    logger.info(f"Number of variables to make subgroups selected: {change} \n")
-    global variable_repeats
-
-    # Add more widget areas if the user increased the number of variables desired
-    if change > variable_repeats:
-    
-        # The number of areas to add is the new number minus the previous (so the missing are added instead of creating all again)
-        for repeat in range(variable_repeats, change):
-            
-            # Reset and initialize the first widget in the widget area for each new variable
-            subgroup_widget_areas[repeat]['dataset_dropdown'].value='Click here to select...'
-            subgroup_widget_areas[repeat]['dataset_dropdown'].observe(lambda value, repeat=repeat: dataset_selection_handler(value, repeat), 'value')
-
-            # Clear the outputs of the new widget area and show the initial widget
-            subgroup_output_areas[repeat]['subgroup_maker1_info'].clear_output()
-            subgroup_output_areas[repeat]['subgroup_maker2_info'].clear_output()
-            with subgroup_output_areas[repeat]['subgroup_options_selection_info']:
-                subgroup_output_areas[repeat]['subgroup_options_selection_info'].clear_output()
-                display(widgets.HTML("<hr>"))
-                display(subgroup_widget_areas[repeat]['dataset_dropdown'])
-   
-    # Remove widget areas if the user decreased the number of variables desired
-    elif change < variable_repeats:
-        
-        # Clear out any previous outputs in the widget areas to remove
-        for repeat in range(variable_repeats - 1, change - 1, -1):
-            subgroup_output_areas[repeat]['subgroup_maker1_info'].clear_output()
-            subgroup_output_areas[repeat]['subgroup_maker2_info'].clear_output()
-            subgroup_output_areas[repeat]['subgroup_options_selection_info'].clear_output()
-
-    # Show the minimum widget repeats number (1) when the button is selected for the first time
-    else:
-        # Reset and initialize the first widget in the widget area
-        subgroup_widget_areas[0]['dataset_dropdown'].value='Click here to select...'
-        subgroup_widget_areas[0]['dataset_dropdown'].observe(lambda value, repeat=0: dataset_selection_handler(value, repeat), 'value')
-
-        # Clear the outputs of the new widget area and show the initial widget
-        subgroup_output_areas[0]['subgroup_maker1_info'].clear_output()
-        subgroup_output_areas[0]['subgroup_maker2_info'].clear_output()
-        with subgroup_output_areas[0]['subgroup_options_selection_info']:
-            subgroup_output_areas[0]['subgroup_options_selection_info'].clear_output()
-            display(widgets.HTML("<hr>"))
-            display(subgroup_widget_areas[0]['dataset_dropdown'])
-        
-    # Get the current number of widget areas to create
-    variable_repeats = change
-
-###################################################################################################
-
 # Function to display the output of subgroup_buttons (slider)
 def subgroup_buttons_handler(change):
     
@@ -539,18 +472,74 @@ def subgroup_buttons_handler(change):
             variable_number_slider = st.slider(label="Number of variables:", 
                                                min_value=1, max_value=5, step=1, value=1)
         if variable_number_slider:
-            variable_number_slider_handler(variable_number_slider)    
+            variable_number_slider_handler(variable_number_slider)   
     else:
-        # If the user doesn't want to make subgroups, don't show the slider
+        # If the user doesn't want to make subgroups, don't show the slider 
         logger.info(f"The user selected: No subgroups     Widget: subgroup_buttons \n")
         subgroup_buttons_output.empty()
+
+        # This part of the statement is executed in the first time the radio buttons are shown
+        # So we initialize the variable_repeats to 0, so when the slider is shown for the first
+        # time (default value = 1), we immediately respond to it
+        st.session_state["variable_repeats"] = 0
+
+###################################################################################################
+
+# Function to display the output of variable_number_slider (widget+output areas)
+def variable_number_slider_handler(change):
+    return
+    # Get required variables from the session state
+    variable_repeats = st.session_state.get("variable_repeats")
+    df_RNA = st.session_state.get("df_RNA")
+    logger = st.session_state.get("logger")
+    
+    # Create
+    col_1_row_4, col_2_row_4, col_3_row_4 = st.columns([1, 1, 1], gap="medium")
+    col_1_row_5, col_2_row_5 = st.columns([3, 1], gap="medium")
+    col_1_row_6, col_2_row_6, col_3_row_6 = st.columns([1, 1, 1], gap="medium")
+    col_1_row_7, col_2_row_7 = st.columns([3, 1], gap="medium")
+    col_1_row_8, col_2_row_8, col_3_row_8 = st.columns([1, 1, 1], gap="medium")
+    col_1_row_9, col_2_row_9 = st.columns([3, 1], gap="medium")
+    col_1_row_10, col_2_row_10, col_3_row_10 = st.columns([1, 1, 1], gap="medium")
+    col_1_row_11, col_2_row_11 = st.columns([3, 1], gap="medium")
+    col_1_row_12, col_2_row_12, col_3_row_12 = st.columns([1, 1, 1], gap="medium")
+    col_1_row_13, col_2_row_13 = st.columns([3, 1], gap="medium")
+    
+    logger.info(f"Number of variables to make subgroups selected: {change} \n")
+    
+    # Add widget+output areas if the user increased the number of variables desired
+    # This also applies the first time the user selects "Using variable(s)"
+    if change > variable_repeats:
+    
+        # The number of areas to add is the new number minus the previous (so the missing are added instead of creating all again)
+        for repeat in range(variable_repeats, change):
+            
+            # Show a divider
+            st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
+
+            # Show the dataset dropdown for this repeat and set the common callback function
+            with st.session_state["widget_and_output_areas"][5 * (repeat - 1) + 0]:
+                st.selectbox(label="Select dataset:",
+                            options=['Click here to select...', 'clinical'] + (['RNA'] if df_RNA is not None else []),
+                            index=0, key=f"dataset_dropdown_{repeat}")
+            #if dataset_dropdown:
+                #dataset_dropdown_handler(dataset_dropdown, repeat)
+
+
+    # Remove widget areas if the user decreased the number of variables desired
+    else:
+        # Clear out any previous outputs in the widget areas to remove
+        for repeat in range(variable_repeats - 1, change - 1, -1):
+            st.session_state["widget_and_output_areas"][5 * (repeat - 1) + 9].empty()
+
+    # Update the variable repeats in the session state to the ones currently displayed
+    st.session_state["variable_repeats"] = change
 
 ###################################################################################################
 
 # Function to feed the appropriate selections to the KM_analysis function 
 def pass_KM_parameters():
-    st.write("Feature pending :( ")
-    return
+    
     # Get the required variables from the session state
     df_clinical = st.session_state.get("df_clinical")
     logger = st.session_state.get("logger")
@@ -559,7 +548,14 @@ def pass_KM_parameters():
     subgroup_buttons_selection = st.session_state.get("subgroup_buttons_selection")
     event_observation_selection = st.session_state.get("event_observation_selection")
     time_to_event_selection = st.session_state.get("time_to_event_selection")
-    KM_plot_area = st.session_state["widget_and_output_areas"][33]
+    CI_checkbox = st.session_state.get("CI_checkbox")
+    move_labels_checkbox = st.session_state.get("move_labels_checkbox")
+    at_risk_checkbox = st.session_state.get("at_risk_checkbox")
+    sample_fraction = st.session_state.get("sample_fraction")
+
+    # Create the container for the plot
+    col_1_row_14, col_2_row_14, col_3_row_14 = st.columns([0.5, 9, 0.5], gap="medium")
+    KM_plot_area = col_2_row_14
 
     # If no subgrouping is required, apply the event tags and pass the data to KM_analysis
     if subgroup_buttons_selection == 'None':
@@ -582,32 +578,37 @@ def pass_KM_parameters():
         logger.info(f"[No subgroups 1st step] Data types of KM_data columns: \n {KM_data.dtypes.to_string()} \n\n")
                 
         # Filter out non-desired values and convert column to numbers for the KM Fitter
-        KM_data = KM_data[['PATIENT_ID', time_to_event_dropdown.value, event_observation_dropdown.value]]
-        KM_data = KM_data.loc[KM_data[event_observation_dropdown.value].isin(["0", "1"])]
-        KM_data[event_observation_dropdown.value] = KM_data[event_observation_dropdown.value].astype(int)
+        KM_data = KM_data[['PATIENT_ID', time_to_event_selection, event_observation_selection]]
+        KM_data = KM_data.loc[KM_data[event_observation_selection].isin(["0", "1"])]
+        KM_data = KM_data.dropna(subset=[time_to_event_selection])
+        KM_data[event_observation_selection] = KM_data[event_observation_selection].astype(int)
 
         # Log the current status of KM_data
         logger.info(f"[No subgroups 2nd step] Keep relevant columns of KM_data and only rows with 0/1 event labels: \n {KM_data.head(15).to_string()} \n")
         logger.info(f"[No subgroups 2nd step] Data types of KM_data columns: \n {KM_data.dtypes.to_string()} \n\n")
         
-        # Pass the input parameters to the KM_analysis function and get back the KM objectt
+        # Pass the input parameters to the KM_analysis function and get back the KM object
         KM_subgroups = []           
         KM_analysis_output = KM_analysis(KM_data, KM_subgroups)
-
-        # Plot the estimate from the KMF object
+        
+        # Make a plot with altair for the KM estimate obtained
+        plt.figure(figsize=(10, 6))
+        KM_analysis_output.plot(ci_show=CI_checkbox, legend=False, at_risk_counts=at_risk_checkbox, 
+                                iloc=slice(0, int(len(KM_analysis_output.survival_function_) * sample_fraction)))
+        plt.xlabel("Time (Months)")
+        plt.ylabel("Survival Probability")
+        plt.title("Kaplan-Meier Estimate")
+        
+        # Show the plot
         with KM_plot_area:
-            KM_plot_area.clear_output()
-            plt.figure(figsize=(10, 6))
-            KM_analysis_output.plot(ci_show=CI_checkbox.value, legend=False, at_risk_counts=at_risk_checkbox.value, 
-                                    iloc=slice(0, int(len(KM_analysis_output.survival_function_) * 0.95)))
-            plt.xlabel("Time")
-            plt.ylabel("Probability")
-            plt.title("Kaplan-Meier Estimate")
-            plt.show()
+            KM_plot_area.empty()
+            st.pyplot(plt)
+
             
     ##########
     # If subgroups were selected, apply the corresponding tags or ranges
     else:
+        ######CHECK where KM_data_all and variable_repeats come from
 
         # Log the current status of KM_data_working
         logger.info(f"[Subgrouping 3rd step] Dataset KM_data_all before applying subgrouping labels: \n {KM_data_all.head(15).to_string()} \n")
@@ -740,25 +741,70 @@ def pass_KM_parameters():
             # Replace the current key with the corrected_key in the KM_analysis_output dictionary
             KM_analysis_output[new_key] = KM_analysis_output.pop(old_key)
 
-        
-        # Plot the estimates of all KMF objects (95% of data points)
+        # Plot the estimates of all KMF objects 
         with KM_plot_area:
-            KM_plot_area.clear_output()     
+            KM_plot_area.empty()     
             plt.figure(figsize=(10, 6))
             for label, KM_object in KM_analysis_output.items():
-                KM_object.plot(label=label, ci_show=CI_checkbox.value, iloc=slice(0, int(len(KM_object.survival_function_) * 0.95)))
-            plt.xlabel('Time')
+                KM_object.plot(label=label, ci_show=CI_checkbox.value, iloc=slice(0, int(len(KM_object.survival_function_) * sample_fraction)))
+            plt.xlabel('Time (Months)')
             plt.ylabel('Probability')
             plt.title('Kaplan-Meier Estimates')
-            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left') if plot_labels_checkbox.value else plt.legend()
+            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left') if move_labels_checkbox.value else plt.legend()
             if at_risk_checkbox.value:
                 add_at_risk_counts(*KM_analysis_output.values(), labels=list(KM_analysis_output.keys()), ax=plt.gca())
             plt.show()
 
     # Once any of the plots is made and displayed, we enable the saving button to show it
-    save_button.description = 'Save results'
-    save_button.button_style = 'info'
-    save_button.disabled = False
+    st.session_state["disable_saving"] = False
+    #st.rerun()
+
+###################################################################################################
+
+def KM_analysis(KM_data, KM_subgroups):
+    
+    # Unpack the input parameters provided
+    current_time_column = KM_data.columns[1]
+    current_event_column = KM_data.columns[2]
+
+    # Get the required variables from the session state
+    logger = st.session_state.get("logger")
+    subgroup_buttons_selection = st.session_state.get("subgroup_buttons_selection")
+
+    # Use the whole dataset when no groups were made
+    if subgroup_buttons_selection == 'None':
+
+        # Create a single KaplanMeierFitter object
+        KMF_object = KaplanMeierFitter()
+
+        # Generate the plot using the specified columns
+        KMF_object.fit(durations=KM_data[current_time_column], event_observed=KM_data[current_event_column])
+
+        # Log part of the curve to verify the data was passed correctly
+        logger.info(f"[No Subgroups 3rd step] The KM Fitter succesfully calculated the probabilities and made the plot. \n")
+        logger.info(f"[No Subgroups 3rd step] Calculated survival function: \n {KMF_object.survival_function_.head(7).to_string()} \n ... \n {KMF_object.survival_function_.tail(7).to_string()} \n\n")
+
+    # Make a fit for every subset provided (based on the number of groups and subgroups made
+    else:
+        
+        # Sort the subgroups in alphabetical order to plot them in the same order and colour
+        KM_subgroups = OrderedDict(sorted(KM_subgroups.items()))
+        
+        # Create an empty dictionary to store the KaplanMeierFitter objects
+        KMF_object = {}
+        logger.info(f"[Subgrouping 4th step] The KM Fitter succesfully calculated the probabilities. \n")
+        
+        # Create KaplanMeierFitter objects for each subgroup in KM_subgroups
+        for label, subset in KM_subgroups.items():
+            kmf = KaplanMeierFitter()
+            kmf.fit(durations=subset[current_time_column], event_observed=subset[current_event_column])
+            KMF_object[label] = kmf
+
+            # Log part of the curve to verify the data was passed correctly
+            logger.info(f"[Subgrouping 4th step] Calculated survival function of: {label}")
+            logger.info(f"\n {kmf.survival_function_.head(7).to_string()} \n ... \n {kmf.survival_function_.tail(7).to_string()} \n\n")
+        
+    return KMF_object
 
 ###################################################################################################
 
@@ -766,7 +812,7 @@ def pass_KM_parameters():
 file_count = 1
 
 def save_KM_results(save_button):
-    st.write("Feature pending :(")
+    st.write("Feature 5 pending")
     return
 
     # Increment the file count to avoid overwriting previous plots and excel files
@@ -912,7 +958,8 @@ if start_button or "flow_control_1" in st.session_state:
 ############################### PENDING TO ADAPT TO STREAMLIT #####################################
 
 # Function to display the output of dataset_dropdown (two subwidgets) 
-def dataset_selection_handler(change, repeat):
+def dataset_dropdown_handler(change, repeat):
+    st.write("Feature 1 pending")
     return
     # Reset the subgroup_number_slider
     subgroup_widget_areas[repeat]['subgroup_number_slider'].value = 1
@@ -959,6 +1006,7 @@ def dataset_selection_handler(change, repeat):
 # Function to display the output of variables_dropdown and variables_combobox (plots)
 # Reminder that this function has to work for both df_clinical and df_RNA
 def variables_selection_handler(change, repeat):
+    st.write("Feature 2 pending")
     return
     # Reset the subgroup_number_slider to remove any previous widget boxes
     subgroup_widget_areas[repeat]['subgroup_number_slider'].value = 1
@@ -1081,6 +1129,7 @@ def variables_selection_handler(change, repeat):
 
 # Function to display the output of group_number slider (widget boxes)
 def group_number_selection_handler(change, repeat):
+    st.write("Feature 3 pending")
     return
     # This function uses the global variable column_data[repeat] created in the function below
     global subgroup_boxes, subgroup_tagsinput, subgroup_floatrangeslider
@@ -1132,53 +1181,9 @@ def group_number_selection_handler(change, repeat):
 
 ###################################################################################################
 
-def KM_analysis(KM_data, KM_subgroups):
-    return
-    # Unpack the input parameters provided
-    current_time_column = KM_data.columns[1]
-    current_event_column = KM_data.columns[2]
-    
-    global KMF_object
-
-    # Use the whole dataset when no groups were made
-    if subgroup_buttons.value == 'No':
-
-        # Create a single KaplanMeierFitter object
-        KMF_object = KaplanMeierFitter()
-
-        # Generate the plot using the specified columns
-        KMF_object.fit(durations=KM_data[current_time_column], event_observed=KM_data[current_event_column])
-
-        # Log part of the curve to verify the data was passed correctly
-        logger.info(f"[No Subgroups 3rd step] The KM Fitter succesfully calculated the probabilities and made the plot. \n")
-        logger.info(f"[No Subgroups 3rd step] Calculated survival function: \n {KMF_object.survival_function_.head(7).to_string()} \n ... \n {KMF_object.survival_function_.tail(7).to_string()} \n\n")
-
-    # Make a fit for every subset provided (based on the number of groups and subgroups made
-    else:
-
-        # Sort the subgroups in alphabetical order to plot them in the same order and colour
-        KM_subgroups = OrderedDict(sorted(KM_subgroups.items()))
-        
-        # Create an empty dictionary to store the KaplanMeierFitter objects
-        KMF_object = {}
-        logger.info(f"[Subgrouping 4th step] The KM Fitter succesfully calculated the probabilities. \n")
-        
-        # Create KaplanMeierFitter objects for each subgroup in KM_subgroups
-        for label, subset in KM_subgroups.items():
-            kmf = KaplanMeierFitter()
-            kmf.fit(durations=subset[current_time_column], event_observed=subset[current_event_column])
-            KMF_object[label] = kmf
-
-            # Log part of the curve to verify the data was passed correctly
-            logger.info(f"[Subgrouping 4th step] Calculated survival function of: {label}")
-            logger.info(f"\n {kmf.survival_function_.head(7).to_string()} \n ... \n {kmf.survival_function_.tail(7).to_string()} \n\n")
-        
-    return KMF_object
-
-###################################################################################################
-
 # Function to save the plot image
 def save_plot_image(KM_analysis_output, filename):
+    st.write("Feature 4 pending")
     return
     # Make the figure to fill
     plt.figure(figsize=(10, 6))

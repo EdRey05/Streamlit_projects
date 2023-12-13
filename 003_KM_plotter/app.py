@@ -5,17 +5,16 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V02 (Dec 10, 2023): Second partial version of the app. The plotting with no subgrouping has 
-                        been transformed to work in the Streamlit app, as well as the plot
-                        customizations. It is still pending to transform the option to create
-                        multiple subgroups, to save the plot + dataset, and to review the logging.
-
+    V03 (Dec 13, 2023): Third partial version of the app. The option of no subgroups is now fully
+                        operational, with persistent figure+download buttons for relevant data. 
+                        It is still pending to transform the option to create subgroups, and to 
+                        review the logging.
 '''
 ###################################################################################################
 
 # Import required libraries
 
-import os
+import io
 import numpy as np
 import pandas as pd
 import openpyxl 
@@ -23,7 +22,6 @@ from collections import OrderedDict
 import streamlit as st
 from streamlit_searchbox import st_searchbox
 import altair as alt
-import plotly.express as px
 import matplotlib.pyplot as plt
 from lifelines import KaplanMeierFitter
 from lifelines.plotting import add_at_risk_counts
@@ -216,8 +214,6 @@ def widget_preparation():
     time_to_event_options = st.session_state.get("time_to_event_options")
     event_observation_options = st.session_state.get("event_observation_options")
     logger = st.session_state.get("logger")
-    if "disable_saving" not in st.session_state:
-        st.session_state["disable_saving"] = True
 
     logger.info(f"---------------User interaction with the widgets starts here--------------- \n")
 
@@ -227,11 +223,16 @@ def widget_preparation():
     st.markdown('<hr style="margin-top: -15px; margin-bottom: -15px;">', unsafe_allow_html=True)
     col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3 = st.columns([2, 2, 1.35, 1.15], gap="medium")
     st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
-
+    col_1_row_14, col_2_row_14, col_3_row_14 = st.columns([0.5, 9, 0.5], gap="medium")
+    st.markdown('<hr style="margin-top: +2px; margin-bottom: +2px;">', unsafe_allow_html=True)
+    col_1_row_15, col_2_row_15, col_3_row_15, col_4_row_15 = st.columns(4, gap="small")
+    
     # Save the columns and containers in the session state
     widget_and_output_areas = [col_1_row_1, col_2_row_1,
                                col_1_row_2, col_2_row_2,
-                               col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3]
+                               col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3,
+                               col_1_row_14, col_2_row_14, col_3_row_14,
+                               col_1_row_15, col_2_row_15, col_3_row_15, col_4_row_15]
     st.session_state["widget_and_output_areas"] = widget_and_output_areas
     
     # Time to event widget and callback function
@@ -250,28 +251,40 @@ def widget_preparation():
 
     # Show widgets to generate+save the plot (with their callback functions), and to customize it
     with st.sidebar:
-        st.markdown('<hr style="margin-top: 1px; margin-bottom: 1px;">', unsafe_allow_html=True)
         generate_plot_button = st.button(label="Generate plot", type="primary")
-        save_button = st.button(label="Save plot", type="primary", disabled=st.session_state["disable_saving"], 
-                                help="This button is disabled until you generate a plot")
         st.markdown('<hr style="margin-top: 1px; margin-bottom: 1px;">', unsafe_allow_html=True)
         
         # Customize the plot
-        st.write("#### Customize your plot here  ⬇️⬇️⬇")
+        st.write("#### Customize your plot here  ⬇️⬇️")
         CI_checkbox = st.checkbox(label="Show Confidence Intervals", value=True)
         move_labels_checkbox = st.checkbox(label="Move legend to the side", value=False)
         at_risk_checkbox = st.checkbox(label="Show at-risk table", value=False)
         sample_percent_slider = st.slider(label="Datapoints to plot (%)", min_value=50, max_value=100, value=95)
-    if generate_plot_button:
-        pass_KM_parameters()
-    if save_button:
-        save_KM_results()
     
     # Add the plot customization options to the session state and save button to enable it later
     st.session_state["CI_checkbox"] = CI_checkbox
     st.session_state["move_labels_checkbox"] = move_labels_checkbox
     st.session_state["at_risk_checkbox"] = at_risk_checkbox
     st.session_state["sample_fraction"] = sample_percent_slider / 100
+    
+    # Control the rerun of the plot+excel generation process as not all interactions should trigger it
+    if generate_plot_button or "logged_figure" in st.session_state:
+        KM_plot_area = col_2_row_14
+        
+        # When reruns occur due to other widgets, show the same plot unless the user wants a new one
+        previous_plot = st.session_state.get("logged_figure", False)
+        if previous_plot and not generate_plot_button:
+            with KM_plot_area:
+                
+                st.image(previous_plot)
+        else:
+            KM_figure = pass_KM_parameters()
+            with KM_plot_area:
+                KM_plot_area.empty()
+                st.pyplot(KM_figure)
+
+        # In any case the function to save the files should be executed (it handles logged files)
+        save_KM_results(generate_plot_button)
 
     #################################
 
@@ -552,10 +565,7 @@ def pass_KM_parameters():
     move_labels_checkbox = st.session_state.get("move_labels_checkbox")
     at_risk_checkbox = st.session_state.get("at_risk_checkbox")
     sample_fraction = st.session_state.get("sample_fraction")
-
-    # Create the container for the plot
-    col_1_row_14, col_2_row_14, col_3_row_14 = st.columns([0.5, 9, 0.5], gap="medium")
-    KM_plot_area = col_2_row_14
+    KM_plot_area = st.session_state["widget_and_output_areas"][9]
 
     # If no subgrouping is required, apply the event tags and pass the data to KM_analysis
     if subgroup_buttons_selection == 'None':
@@ -569,6 +579,7 @@ def pass_KM_parameters():
                 KM_data[event_observation_selection] = KM_data[event_observation_selection].replace(tag, "1")            
         else:
             with KM_plot_area:
+                KM_plot_area.empty()
                 st.warning("First select the values to label as 0 and 1 (No event, event)!!")
                 st.stop()
 
@@ -595,17 +606,11 @@ def pass_KM_parameters():
         plt.figure(figsize=(10, 6))
         KM_analysis_output.plot(ci_show=CI_checkbox, legend=False, at_risk_counts=at_risk_checkbox, 
                                 iloc=slice(0, int(len(KM_analysis_output.survival_function_) * sample_fraction)))
-        plt.xlabel("Time (Months)")
+        if not at_risk_checkbox:
+            plt.xlabel("Time (Months)")
         plt.ylabel("Survival Probability")
         plt.title("Kaplan-Meier Estimate")
         
-        # Show the plot
-        with KM_plot_area:
-            KM_plot_area.empty()
-            st.pyplot(plt)
-
-            
-    ##########
     # If subgroups were selected, apply the corresponding tags or ranges
     else:
         ######CHECK where KM_data_all and variable_repeats come from
@@ -755,9 +760,14 @@ def pass_KM_parameters():
                 add_at_risk_counts(*KM_analysis_output.values(), labels=list(KM_analysis_output.keys()), ax=plt.gca())
             plt.show()
 
-    # Once any of the plots is made and displayed, we enable the saving button to show it
-    st.session_state["disable_saving"] = False
-    #st.rerun()
+    # Save the KMF objects made and the figure diplayed to the session state
+    st.session_state["KM_analysis_output"] = KM_analysis_output
+    figure_bytes = io.BytesIO()
+    plt.savefig(figure_bytes, format='jpg', dpi=600, bbox_inches='tight')
+    figure_bytes.seek(0)
+    st.session_state['logged_figure'] = figure_bytes
+
+    return plt.gcf()
 
 ###################################################################################################
 
@@ -808,116 +818,139 @@ def KM_analysis(KM_data, KM_subgroups):
 
 ###################################################################################################
 
-# Global counter to keep track of the number of times the button is clicked
-file_count = 1
+def save_KM_results(generate_plot_button):
 
-def save_KM_results(save_button):
-    st.write("Feature 5 pending")
-    return
-
-    # Increment the file count to avoid overwriting previous plots and excel files
-    file_count_str = str(file_count).zfill(2)  # Convert the counter to a 2-digit zero-padded string
-    file_count += 1
+    # Get the required variables from the session state
+    KM_analysis_output = st.session_state.get("KM_analysis_output")
+    logger = st.session_state.get("logger")
+    file_count = st.session_state.get("file_count", 1)
+    col_2_row_15 = st.session_state["widget_and_output_areas"][12]
+    col_3_row_15 = st.session_state["widget_and_output_areas"][13]
 
     # File names for Excel and plot
+    file_count_str = str(file_count).zfill(2)  # Convert to a 2-digit zero-padded string
     excel_filename = f"KM_results_{file_count_str}.xlsx"
     plot_filename = f"KM_results_{file_count_str}.jpg"
 
-    # Save the plot image with the function below
-    save_plot_image(KM_analysis_output, plot_filename)
+    ###################### Make the plot available for download
 
-    # Create a new Excel workbook and remove the default Sheet
-    workbook = openpyxl.Workbook()
-    workbook.remove(workbook['Sheet'])
-    
-    # Prepare the data to be processed (single KM object or list of KM objects)
-    if isinstance(KM_analysis_output, dict):
-        KM_objects_to_process = [{"label": f"KM_Subgroup_{i+1}", "KM_object": KM_object} for i, (label, KM_object) in enumerate(KM_analysis_output.items())]
-        real_labels = [f"KM_Subgroup_{i+1}: {label}" for i, (label, KM_object) in enumerate(KM_analysis_output.items())]
+    # Get the data from the plot already being displayed
+    figure_bytes = st.session_state.get('logged_figure')
+
+    ###################### Make the Excel file available for download
+
+    # Make a new excel if none has been made or the user explicitely wants a new one
+    if "logged_excel" not in st.session_state or generate_plot_button:    
+        
+        # Create a new Excel workbook and remove the default Sheet
+        workbook = openpyxl.Workbook()
+        workbook.remove(workbook['Sheet'])
+        
+        # Prepare the data to be processed (single KM object or list of KM objects)
+        if isinstance(KM_analysis_output, dict):
+            KM_objects_to_process = [{"label": f"KM_Subgroup_{i+1}", "KM_object": KM_object} for i, (label, KM_object) in enumerate(KM_analysis_output.items())]
+            real_labels = [f"KM_Subgroup_{i+1}: {label}" for i, (label, KM_object) in enumerate(KM_analysis_output.items())]
+        else:
+            # If KM_analysis_output is a single KM object, add it to the list as a dictionary with a general label
+            KM_objects_to_process = [{"label": "KM_Dataset", "KM_object": KM_analysis_output}]
+            real_labels = ["KM_Dataset: Whole dataset - No subgroups"]
+
+        # Process all KM curves/objects the same way 
+        for index, data in enumerate(KM_objects_to_process):
+            
+            # Create a sheet per KM object
+            sheet = workbook.create_sheet(title=data["label"])
+
+            # Write what the curve/object corresponds to
+            sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=13)
+            sheet.cell(row=2, column=1).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            sheet.cell(row=2, column=1, value=real_labels[index]).font = openpyxl.styles.Font(bold=True, size=16)
+
+            # Get the tables from the KMF object
+            event_table = data["KM_object"].event_table
+            survival_function = pd.DataFrame({"Time": data["KM_object"].survival_function_.index,
+                                            "Survival Probability": np.ravel(data["KM_object"].survival_function_.values)})
+            confidence_interval = data["KM_object"].confidence_interval_
+            median_survival_time = data["KM_object"].median_survival_time_
+
+            # Write the tables to the Excel sheet
+            tables = [event_table, survival_function, confidence_interval, median_survival_time]
+            table_names = ["Event Table", "Survival Function", "Confidence Intervals", "Median Survival Time"]
+            table_column_numbers = [1, 7, 10, 13]
+            
+            # Write all tables to the sheet
+            for col_index, (table, table_name) in enumerate(zip(tables, table_names)):
+                # Define the current column number for the table
+                current_column = table_column_numbers[col_index]
+        
+                # Set the header for the current table
+                sheet.cell(row=4, column=current_column, value=table_name).font = openpyxl.styles.Font(bold=True)
+        
+                if isinstance(table, pd.DataFrame):
+                    # If the table is a DataFrame, convert it to a NumPy array
+                    rows = table.to_numpy()
+        
+                    for row_index, row in enumerate(rows):
+                        # Write the data from the DataFrame to the Excel sheet
+                        for col_offset, value in enumerate(row):
+                            sheet.cell(row=row_index + 6, column=current_column + col_offset, value=value)  
+                else:
+                    # If the table is not a DataFrame, write the single value to the Excel sheet
+                    sheet.cell(row=5, column=current_column, value=table)
+
+            ##### Extra worksheet formatting 
+            # Merge and center table titles
+            sheet.merge_cells(start_row=4, start_column=1, end_row=4, end_column=5)
+            sheet.cell(row=4, column=1).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            sheet.merge_cells(start_row=4, start_column=7, end_row=4, end_column=8)
+            sheet.cell(row=4, column=7).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            sheet.merge_cells(start_row=4, start_column=10, end_row=4, end_column=11)
+            sheet.cell(row=4, column=10).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            
+            # Write column titles and center them
+            sheet.cell(row=5, column=1, value="Removed")
+            sheet.cell(row=5, column=2, value="Observed")
+            sheet.cell(row=5, column=3, value="Censored")
+            sheet.cell(row=5, column=4, value="Entrance")
+            sheet.cell(row=5, column=5, value="At Risk")
+            sheet.cell(row=5, column=7, value="Time")
+            sheet.cell(row=5, column=8, value="Probability")
+            sheet.cell(row=5, column=10, value="Lower Bound")
+            sheet.cell(row=5, column=11, value="Upper Bound")
+            for cell in ["A5", "B5", "C5", "D5", "E5", "G5", "H5", "J5", "K5"]:
+                sheet[cell].alignment = openpyxl.styles.Alignment(horizontal='center')
+            
+            # Adjust some column widths
+            for column, width in zip(['H', 'J', 'K', 'M'], [10, 12, 12, 22]):
+                sheet.column_dimensions[column].width = width
+            #####
+        
+        # Save the Excel file to the session state
+        excel_bytes = io.BytesIO()
+        workbook.save(excel_bytes)
+        excel_bytes.seek(0)
+        st.session_state['logged_excel'] = excel_bytes
     else:
-        # If KM_analysis_output is a single KM object, add it to the list as a dictionary with a general label
-        KM_objects_to_process = [{"label": "KM_Dataset", "KM_object": KM_analysis_output}]
-        real_labels = ["KM_Dataset: Whole dataset - No subgroups"]
+        # If this rerun does not require making a new excel, use the logged file
+        excel_bytes = st.session_state.get("logged_excel")
 
-    # Process all KM curves/objects the same way 
-    for index, data in enumerate(KM_objects_to_process):
-        
-        # Create a sheet per KM object
-        sheet = workbook.create_sheet(title=data["label"])
-
-        # Write what the curve/object corresponds to
-        sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=13)
-        sheet.cell(row=2, column=1).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
-        sheet.cell(row=2, column=1, value=real_labels[index]).font = openpyxl.styles.Font(bold=True, size=16)
-
-        # Get the tables from the KMF object
-        event_table = data["KM_object"].event_table
-        survival_function = pd.DataFrame({"Time": data["KM_object"].survival_function_.index,
-                                          "Survival Probability": np.ravel(data["KM_object"].survival_function_.values)})
-        confidence_interval = data["KM_object"].confidence_interval_
-        median_survival_time = data["KM_object"].median_survival_time_
-
-        # Write the tables to the Excel sheet
-        tables = [event_table, survival_function, confidence_interval, median_survival_time]
-        table_names = ["Event Table", "Survival Function", "Confidence Intervals", "Median Survival Time"]
-        table_column_numbers = [1, 7, 10, 13]
-        
-        # Write all tables to the sheet
-        for col_index, (table, table_name) in enumerate(zip(tables, table_names)):
-            # Define the current column number for the table
-            current_column = table_column_numbers[col_index]
+    ###################### Show the download buttons for the current data
     
-            # Set the header for the current table
-            sheet.cell(row=4, column=current_column, value=table_name).font = openpyxl.styles.Font(bold=True)
-    
-            if isinstance(table, pd.DataFrame):
-                # If the table is a DataFrame, convert it to a NumPy array
-                rows = table.to_numpy()
-                num_cols = len(table.columns)
-    
-                for row_index, row in enumerate(rows):
-                    # Write the data from the DataFrame to the Excel sheet
-                    for col_offset, value in enumerate(row):
-                        sheet.cell(row=row_index + 6, column=current_column + col_offset, value=value)  
-            else:
-                # If the table is not a DataFrame, write the single value to the Excel sheet
-                sheet.cell(row=5, column=current_column, value=table)
-
-        ##### Extra worksheet formatting 
-        # Merge and center table titles
-        sheet.merge_cells(start_row=4, start_column=1, end_row=4, end_column=5)
-        sheet.cell(row=4, column=1).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
-        sheet.merge_cells(start_row=4, start_column=7, end_row=4, end_column=8)
-        sheet.cell(row=4, column=7).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
-        sheet.merge_cells(start_row=4, start_column=10, end_row=4, end_column=11)
-        sheet.cell(row=4, column=10).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
-        
-        # Write column titles and center them
-        sheet.cell(row=5, column=1, value="Removed")
-        sheet.cell(row=5, column=2, value="Observed")
-        sheet.cell(row=5, column=3, value="Censored")
-        sheet.cell(row=5, column=4, value="Entrance")
-        sheet.cell(row=5, column=5, value="At Risk")
-        sheet.cell(row=5, column=7, value="Time")
-        sheet.cell(row=5, column=8, value="Probability")
-        sheet.cell(row=5, column=10, value="Lower Bound")
-        sheet.cell(row=5, column=11, value="Upper Bound")
-        for cell in ["A5", "B5", "C5", "D5", "E5", "G5", "H5", "J5", "K5"]:
-            sheet[cell].alignment = openpyxl.styles.Alignment(horizontal='center')
-        
-        # Adjust some column widths
-        for column, width in zip(['H', 'J', 'K', 'M'], [10, 12, 12, 22]):
-            sheet.column_dimensions[column].width = width
-        #####
-    
-    # Save the Excel file and log it
-    workbook.save(excel_filename)
-    logger.info(f"An excel file containing the results has been saved to the current directory and the name {excel_filename} \n")
-    
-    # Update the button description
-    save_button.description = 'Results Saved!'
-    save_button.button_style = ''
-    save_button.disabled = True
+    with col_2_row_15:
+        download_plot = st.download_button(label='Download Plot', data=figure_bytes, 
+                           file_name=plot_filename, type='primary', mime='image/png')
+    with col_3_row_15:
+        download_excel = st.download_button(label='Download Raw Data', data=excel_bytes, 
+                           file_name=excel_filename, type='primary',
+                           mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    # Log the download of any file
+    if download_plot:
+        logger.info(f"A KM plot with the name {plot_filename} has been downloaded \n")
+    if download_excel:
+        logger.info(f"An excel file with the name {excel_filename} has been downloaded \n")
+    # When something is downloaded, increment the file count to avoid multiple files with the same name
+    if download_plot or download_excel:
+        st.session_state["file_count"] = file_count + 1
 
 ###################################################################################################
 
@@ -1178,40 +1211,5 @@ def group_number_selection_handler(change, repeat):
         with subgroup_output_areas[repeat]['subgroup_maker2_info']:
             subgroup_output_areas[repeat]['subgroup_maker2_info'].clear_output()
             display(HTML('<span style="color: red;">For 1 group just remove this variable!</span>'))
-
-###################################################################################################
-
-# Function to save the plot image
-def save_plot_image(KM_analysis_output, filename):
-    st.write("Feature 4 pending")
-    return
-    # Make the figure to fill
-    plt.figure(figsize=(10, 6))
-
-    if isinstance(KM_analysis_output, dict):
-        # Plot the estimates of all KMF objects (95% of data points)
-        for label, KM_object in KM_analysis_output.items():
-            KM_object.plot(label=label, ci_show=CI_checkbox.value, iloc=slice(0, int(len(KM_object.survival_function_) * 0.95)))
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left') if plot_labels_checkbox.value else plt.legend()
-        plt.xlabel('Time')
-        plt.ylabel('Probability')
-        plt.title('Kaplan-Meier Estimates')
-        
-        # Add at-risk counts table
-        if at_risk_checkbox.value:
-            add_at_risk_counts(*KM_analysis_output.values(), labels=list(KM_analysis_output.keys()), ax=plt.gca())
-    else:
-        # Plot the estimate from the single KMF object
-        KM_analysis_output.plot(ci_show=CI_checkbox.value, legend=False, at_risk_counts=at_risk_checkbox.value,
-                                iloc=slice(0, int(len(KM_analysis_output.survival_function_) * 0.95)))
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left') if plot_labels_checkbox.value else plt.legend()
-        plt.xlabel('Time')
-        plt.ylabel('Probability')
-        plt.title('Kaplan-Meier Estimate')
-    
-    # Save, log and close the plot to release memory
-    plt.savefig(filename, dpi=600, bbox_inches='tight')
-    logger.info(f"A jpg file containing the KM plot has been saved to the current directory and the name {filename} \n")
-    plt.close()
 
 ###################################################################################################

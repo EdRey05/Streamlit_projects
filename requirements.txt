@@ -1,17 +1,17 @@
 # General libraries
-numpy==1.26.1
-pandas==2.1.2
-matplotlib==3.8.0
-plotly==5.18.0
+numpy
+pandas
+matplotlib
+plotly
+altair
 
 # Streamlit-related libraries
-streamlit==1.28.0
-streamlit-searchbox==0.1.5
-streamlit-option-menu==0.3.6
-streamlit-carousel==0.0.4
+streamlit
+streamlit-searchbox
+streamlit-option-menu
+streamlit-carousel
 
 # Libraries for specific features or data processing in my apps
-natsort==8.4.0
-openpyxl==3.1.2
-python-pptx==0.6.23
-lifelines==0.27.8
+openpyxl
+python-pptx
+lifelines

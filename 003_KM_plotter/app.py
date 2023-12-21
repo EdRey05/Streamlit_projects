@@ -5,10 +5,11 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V05 (Dec 18, 2023): Fifth partial version of the app. The widget behaviour for the subgrouping
-                        option has been fully implemented, and only remains to edit the part that 
-                        makes its plot and files for download, as it is for the None option (fully
-                        functional already). Reviewing the logging is still pending.
+    V06 (Dec 21, 2023): First fully functional version, now it does everything that the Jupyter
+                        notebook used as reference does (see V01 of this app for more info). Both
+                        -None- and -Using variable(s)- options work for clinical alone and also
+                        with the optional RNA file. The only pending things are to revise the
+                        logging and do some minor layout improvements. 
 '''
 ###################################################################################################
 
@@ -191,10 +192,10 @@ def file_preprocessing():
         df_RNA.sort_index(axis=1, inplace=True)
         
         # Reset the index to a numerical index
-        df_RNA = df_RNA.reset_index().rename_axis("", axis="columns")
+        df_RNA = df_RNA.reset_index()
         
         # Rename the "index" column to "PATIENT_ID"
-        df_RNA.rename(columns={"": "PATIENT_ID"}, inplace=True)
+        df_RNA.rename(columns={"index": "PATIENT_ID"}, inplace=True)
         
         # Sort Patient IDs and reset the index
         df_RNA = df_RNA.sort_values("PATIENT_ID").reset_index(drop=True)
@@ -294,7 +295,24 @@ def widget_preparation():
                 st.pyplot(KM_figure)
 
         # In any case the function to save the files should be executed (it handles logged files)
-        save_KM_results(generate_plot_button)
+        figure_bytes, plot_filename, excel_bytes, excel_filename = save_KM_results(generate_plot_button)
+
+        # Show the download buttons for the current data
+        with col_2_row_15:
+            download_plot = st.download_button(label='Download Plot', data=figure_bytes, 
+                            file_name=plot_filename, type='primary', mime='image/png')
+        with col_3_row_15:
+            download_excel = st.download_button(label='Download Raw Data', data=excel_bytes, 
+                            file_name=excel_filename, type='primary',
+                            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # Log the download of any file
+        if download_plot:
+            logger.info(f"A KM plot with the name {plot_filename} has been downloaded \n")
+        if download_excel:
+            logger.info(f"An excel file with the name {excel_filename} has been downloaded \n")
+        # When something is downloaded, increment the file count to avoid multiple files with the same name
+        if download_plot or download_excel:
+            st.session_state["file_count"] += 1
 
 ###################################################################################################
 
@@ -468,7 +486,6 @@ def subgroup_buttons_handler(change):
         
         # Variables that need to be initialized with specific values/number of items
         st.session_state["column_data"] = ["0", "1", "2", "3", "4"]
-        st.session_state["subgroup_boxes"] = ["0", "1", "2", "3", "4"]
         st.session_state["KM_data_all"] = pd.DataFrame(columns=["0", "1", "2"])
 
         # Show a slider for 1 to 5 variables (to prevent crazy number of curves)
@@ -480,6 +497,12 @@ def subgroup_buttons_handler(change):
         # If the user doesn't want to make subgroups, don't show the slider 
         logger.info(f"The user selected: No subgroups     Widget: subgroup_buttons \n")
         subgroup_buttons_output.empty()
+        
+        # Clear memomory if subgroup were previously made and no longer needed
+        if "subgroup_info" in st.session_state:
+            del st.session_state["subgroup_info"]
+        if "KM_data_all" in st.session_state:
+            del st.session_state["KM_data_all"]
 
 ###################################################################################################
 
@@ -506,7 +529,7 @@ def variable_number_slider_handler(change):
             dataset_dropdown_1 = st.selectbox(label="Select a dataset:", 
                         options=['Click here to select...', 'clinical'] + (['RNA'] if df_RNA is not None else []),
                         index=0, key="dataset_dropdown_1")
-            
+        
         # When something is selected in the first widget, show two more in the same row
         if dataset_dropdown_1 == 'clinical':
             # A dropdown widget if the dataset selected is the clinical one
@@ -521,8 +544,8 @@ def variable_number_slider_handler(change):
         elif dataset_dropdown_1 == 'RNA':
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_4:
-                variable_dropdown_1 = st_searchbox(search_function=search_genes, default=None, 
-                     label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_1")
+                variable_dropdown_1 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                                label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_1rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_4:
                 subgroup_slider_1 = st.slider(label="Number of subgroups:",
@@ -632,8 +655,8 @@ def variable_number_slider_handler(change):
         elif dataset_dropdown_2 == 'RNA':
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_6:
-                variable_dropdown_2 = st_searchbox(search_function=search_genes, default=None, 
-                     label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_2")
+                variable_dropdown_2 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                     label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_2rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_6:
                 subgroup_slider_2 = st.slider(label="Number of subgroups:",
@@ -743,8 +766,8 @@ def variable_number_slider_handler(change):
         elif dataset_dropdown_3 == 'RNA':
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_8:
-                variable_dropdown_3 = st_searchbox(search_function=search_genes, default=None, 
-                                                   label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_3")
+                variable_dropdown_3 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                                label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_3rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_8:
                 subgroup_slider_3 = st.slider(label="Number of subgroups:",
@@ -854,8 +877,8 @@ def variable_number_slider_handler(change):
         elif dataset_dropdown_4 == 'RNA':
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_10:
-                variable_dropdown_4 = st_searchbox(search_function=search_genes, default=None, 
-                                                   label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_4")
+                variable_dropdown_4 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                                label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_4rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_10:
                 subgroup_slider_4 = st.slider(label="Number of subgroups:",
@@ -965,8 +988,8 @@ def variable_number_slider_handler(change):
         elif dataset_dropdown_5 == 'RNA':
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_12:
-                variable_dropdown_5 = st_searchbox(search_function=search_genes, default=None, 
-                                                   label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_5")
+                variable_dropdown_5 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                                label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_5rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_12:
                 subgroup_slider_5 = st.slider(label="Number of subgroups:",
@@ -1051,6 +1074,35 @@ def variable_number_slider_handler(change):
             pass
     ###############
 
+    # Create an empty dictionary for each subgroup
+    subgroup_info = [{"df": None, "column": None, 
+                    "subgroup_1": None, "subgroup_2": None, "subgroup_3": None,
+                    "subgroup_4": None, "subgroup_5": None} for _ in range(5)]
+
+    # Update the subgroup information based on the dropdown values
+    for i in range(5):
+        try:
+            subgroup_info[i]["df"] = locals()[f"dataset_dropdown_{i+1}"]
+            subgroup_info[i]["column"] = locals()[f"variable_dropdown_{i+1}"]
+            subgroup_info[i]["subgroup_1"] = locals()[f"subgroup_{i+1}_1"]
+            subgroup_info[i]["subgroup_2"] = locals()[f"subgroup_{i+1}_2"]
+            subgroup_info[i]["subgroup_3"] = locals()[f"subgroup_{i+1}_3"]
+            subgroup_info[i]["subgroup_4"] = locals()[f"subgroup_{i+1}_4"]
+            subgroup_info[i]["subgroup_5"] = locals()[f"subgroup_{i+1}_5"]
+        except:
+            continue
+
+    # Save and log the updated subgroup information to the session state
+    st.session_state["subgroup_info"] = subgroup_info
+    logger.info(f"----------Updated subgroup selections:")
+    for i, subgroup in enumerate(subgroup_info):
+        logger.info(f"Variable {i+1}, df-{subgroup['df']}, column-{subgroup['column']}")
+        logger.info(f"\t Subgroup 1: " + str(subgroup['subgroup_1']) if subgroup['subgroup_1'] is not None else "\t None")
+        logger.info(f"\t Subgroup 2: " + str(subgroup['subgroup_2']) if subgroup['subgroup_2'] is not None else "\t None")
+        logger.info(f"\t Subgroup 3: " + str(subgroup['subgroup_3']) if subgroup['subgroup_3'] is not None else "\t None")
+        logger.info(f"\t Subgroup 4: " + str(subgroup['subgroup_4']) if subgroup['subgroup_4'] is not None else "\t None")
+        logger.info(f"\t Subgroup 5: " + str(subgroup['subgroup_5']) if subgroup['subgroup_5'] is not None else "\t None")
+
 ###################################################################################################
 
 # Function to search a gene of interest in the RNA dataset (if provided) to make subgroups
@@ -1071,14 +1123,14 @@ def variables_selection_handler(change, repeat):
     # Get required variables from the session state
     df_clinical = st.session_state.get("df_clinical")
     df_RNA = st.session_state.get("df_RNA")
-    time_to_event = st.session_state.get("time_to_event_selection")
-    event_observation = st.session_state.get("event_observation_selection")
+    time_to_event_selection = st.session_state.get("time_to_event_selection")
+    event_observation_selection = st.session_state.get("event_observation_selection")
     event_0 = st.session_state.get("event_0")
     event_1 = st.session_state.get("event_1")
     column_data = st.session_state.get("column_data")
     logger = st.session_state.get("logger")
     alt_colors = st.session_state.get("alt_colors")
-
+    
     # First check that the event labels have been selected
     if event_0 == [] or event_1 == []:
         return 
@@ -1087,31 +1139,31 @@ def variables_selection_handler(change, repeat):
     # Apply the 0 and 1 labels to the event observed column and filter those values 
     KM_data_1var = df_clinical.copy()
     for tag in event_0:
-        KM_data_1var[event_observation] = KM_data_1var[event_observation].replace(tag, "0")
+        KM_data_1var[event_observation_selection] = KM_data_1var[event_observation_selection].replace(tag, "0")
     for tag in event_1:
-        KM_data_1var[event_observation] = KM_data_1var[event_observation].replace(tag, "1")
+        KM_data_1var[event_observation_selection] = KM_data_1var[event_observation_selection].replace(tag, "1")
 
         # Filter the selected 0/1 event labels, transform column to integers and keep only the common first 3 columns 
-        KM_data_1var = KM_data_1var.loc[KM_data_1var[event_observation].isin(["0", "1"])]
-        KM_data_1var[event_observation] = KM_data_1var[event_observation].astype(int)
+        KM_data_1var = KM_data_1var.loc[KM_data_1var[event_observation_selection].isin(["0", "1"])]
+        KM_data_1var[event_observation_selection] = KM_data_1var[event_observation_selection].astype(int)
 
     # Log the current status of KM_data_1var
     logger.info(f"[Subgrouping 1st step] The user selected to label -{str(event_0)}- as 0, and -{str(event_1)}- as 1. \n")
-    logger.info(f"[Subgrouping 1st step] Apply 0/1 labels to column {event_observation} on KM_data_1var: \n {KM_data_1var.iloc[:15, :10].to_string()} \n")
+    logger.info(f"[Subgrouping 1st step] Apply 0/1 labels to column {event_observation_selection} on KM_data_1var: \n {KM_data_1var.iloc[:15, :10].to_string()} \n")
     logger.info(f"[Subgrouping 1st step] Data types of KM_data_1var columns: \n {KM_data_1var.dtypes.to_string()} \n\n")
-
+    
     ##### Step 02
     # Look for the selected column in either df, as it is not specified within this function
     if change in df_clinical.columns:
         # Keep only the working columns, log it and extract the column to plot the values
-        KM_data_1var = KM_data_1var[['PATIENT_ID', time_to_event, event_observation, change]]          
+        KM_data_1var = KM_data_1var[['PATIENT_ID', time_to_event_selection, event_observation_selection, change]]          
         logger.info(f"[Subgrouping 2nd step] The column {change} -{KM_data_1var.dtypes[change]} dtype- from df_clinical was selected to make subgroups. \n")
         column_data[repeat - 1] = KM_data_1var[change].copy()
         
     # If the column is in df_RNA, joining is required to combine it with the clinical columns
     elif df_RNA is not None and change in df_RNA.columns:
         # Keep only the working columns from both dfs, log it and extract the column to plot the values
-        KM_data_1var = KM_data_1var[['PATIENT_ID', time_to_event, event_observation]]
+        KM_data_1var = KM_data_1var[['PATIENT_ID', time_to_event_selection, event_observation_selection]]
         df_RNA2 = df_RNA[['PATIENT_ID', change]].copy()
         KM_data_1var = KM_data_1var.merge(df_RNA2, on='PATIENT_ID', how='inner')
         logger.info(f"[Subgrouping 2nd step] The column {change} -{KM_data_1var.dtypes[change]} dtype- from df_RNA was selected to make subgroups. \n")
@@ -1140,7 +1192,7 @@ def variables_selection_handler(change, repeat):
         alt_data3 = pd.DataFrame({change : column_data[repeat - 1]})
         chart3 = alt.Chart(alt_data3).mark_bar(color='#1D8348').encode(
                 alt.X(change, type='quantitative', bin=alt.Bin(maxbins=50)),
-                alt.Y('count()', title='Frequency'),
+                alt.Y('count()', title='Patients'),
                 ).properties(width=500, height=400
                 ).configure_axis(labelColor="#3386BD")
     
@@ -1175,7 +1227,7 @@ def pass_KM_parameters():
     
     # Get the required variables from the session state
     df_clinical = st.session_state.get("df_clinical")
-    logger = st.session_state.get("logger")
+    df_RNA = st.session_state.get("df_RNA")
     time_to_event_selection = st.session_state.get("time_to_event_selection")
     event_observation_selection = st.session_state.get("event_observation_selection")
     event_0 = st.session_state.get("event_0")
@@ -1186,6 +1238,7 @@ def pass_KM_parameters():
     at_risk_checkbox = st.session_state.get("at_risk_checkbox")
     sample_fraction = st.session_state.get("sample_fraction")
     KM_plot_area = st.session_state["widget_and_output_areas"][9]
+    logger = st.session_state.get("logger")
 
     # Handle missing and required widget inputs before trying to do anything
     if time_to_event_selection == "Click here to select...":
@@ -1206,7 +1259,6 @@ def pass_KM_parameters():
 
     # If no subgrouping is required, apply the event tags and pass the data to KM_analysis
     if subgroup_buttons_selection == 'None':
-        
         # Apply the selected labels on the event observation column 
         KM_data = df_clinical.copy()
         for tag in event_0:
@@ -1234,17 +1286,21 @@ def pass_KM_parameters():
         KM_analysis_output = KM_analysis(KM_data, KM_subgroups)
         
         # Make a plot with altair for the KM estimate obtained
-        plt.figure(figsize=(10, 6))
-        KM_analysis_output.plot(ci_show=CI_checkbox, legend=False, at_risk_counts=at_risk_checkbox, 
-                                iloc=slice(0, int(len(KM_analysis_output.survival_function_) * sample_fraction)))
-        if not at_risk_checkbox:
-            plt.xlabel("Time (Months)")
-        plt.ylabel("Survival Probability")
-        plt.title("Kaplan-Meier Estimate")
-        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        KM_analysis_output.plot(ci_show=CI_checkbox, legend=False,  
+                    iloc=slice(0, int(len(KM_analysis_output.survival_function_) * sample_fraction)))
+        ax.set_title('Kaplan-Meier Estimates', fontsize=16)
+        ax.set_ylabel('Probability', fontsize=14)
+        ax.set_xlabel('Time (Months)', fontsize=14)
+        ax.grid(color='#000000', linestyle='--', linewidth=0.5, alpha=0.5)
+        ax.set_facecolor('#F0F0F0')
+        if at_risk_checkbox:
+            add_at_risk_counts(KM_analysis_output, labels=["Label"], ax=ax)
+
     # If subgroups were selected, apply the corresponding tags or ranges
     else:
-        # Get the df with all variables (columns) selected and infer the number of them (first 3 dont count)
+        # Get the state variables that only exist if this widget option was selected
+        subgroup_info = st.session_state.get("subgroup_info")
         KM_data_all = st.session_state.get("KM_data_all")
         variable_repeats = len(KM_data_all.columns) - 3
 
@@ -1258,70 +1314,68 @@ def pass_KM_parameters():
         # Create an empty dictionary to store the mapping for each variable to reassign real group names
         correct_group_labels = [{} for i in range(5)]
 
-        # Only iterate through the last number of variables in the slider (in case the user had more before)
+        # Iterate just through the number of variables selected to save time
         for repeat in range(variable_repeats):
 
-            # To apply the tags in tagsinput we check if the VBoxes have repeats of label+tagsinput or floatrangesliders alone
-            if isinstance(subgroup_boxes[repeat].children[0], widgets.FloatRangeSlider):
+            # Get the info for the corresponding variable (a dictionary with df, column, and subgroups)
+            subgroup_dict = subgroup_info[repeat].copy()
+            all_tags_selected = []
+            
+            # Iterate for each subgroup in the dictionary (the 5 were initialized with None)
+            for j in range(1, 6):
+                # Get the key-value info
+                key = f"subgroup_{j}"
+                value = subgroup_dict[key]
                 
-                # Create a new column to store the group labels (original is numbers, new one will be text and next to the original)
-                KM_data_working.insert(repeat+4, 'TextSubgroup', '')
-
-                # Iterate through the float range sliders
-                for i, floatslider in enumerate(subgroup_boxes[repeat].children):
-                    # Retrieve the range selection and corresponding label
-                    subgroup_range = floatslider.value
-                    subgroup_label = floatslider.description
-                   
-                    # Get the indices of rows within the range selected
-                    subgroup_rows = (KM_data_working.iloc[:, repeat+3] >= subgroup_range[0]) & (KM_data_working.iloc[:, repeat+3] < subgroup_range[1])
+                # Skip the ones that were not selected/not contain anything
+                if value is None:
+                    continue
                 
-                    # Assign the subgroup label to the matching rows
-                    KM_data_working.loc[subgroup_rows, 'TextSubgroup'] = subgroup_label
-
-                    # Add the correct label to the dictionary
-                    correct_group_labels[repeat][subgroup_label] = f"{subgroup_range[0]:.2f} to {subgroup_range[1]:.2f}"
-                
-                # Remove rows where the subgroup label is not assigned
-                KM_data_working = KM_data_working[KM_data_working['TextSubgroup'] != '']
-                variable_column_name = KM_data_working.columns[repeat+3]
-                KM_data_working.drop(variable_column_name, axis=1, inplace=True)
-                KM_data_working.rename(columns={'TextSubgroup': variable_column_name}, inplace=True)
-
-                # Log the ranges corresponding to each subgroup
-                log_string = " - ".join([f"Group {i+1}: {slider.value[0]:.2f} to {slider.value[1]:.2f}" for i, slider in enumerate(subgroup_boxes[repeat].children)])
-                logger.info(f"[Subgrouping 3rd step] Subgrouping labels applied to variable {repeat+1}---> {log_string} \n")
-
-            # The HBoxes containing tagsinput widgets and labels do not have the attribute lenght
-            else:
-                
-                # Retrieve the labels and elements to label
-                subgroup_selections = [tagsHBox.children[1].value for tagsHBox in subgroup_boxes[repeat].children]
-                subgroup_labels = [tagsHBox.children[0].value for tagsHBox in subgroup_boxes[repeat].children]
-                label_content_pairs = []
-                
-                # Iterate through the subgroup_selections list
-                for i, tags_list in enumerate(subgroup_selections):
-                    subgroup_elements = tags_list
-    
-                    # Generate a mapping of unique values to group labels
-                    element_to_label = {element: subgroup_labels[i] for element in subgroup_elements}
-
-                    # Add the group label to its list and the correct label to the dictionary
-                    label_content_pairs.extend([f"{element}: {subgroup_labels[i]}" for element in subgroup_elements])
-                    correct_group_labels[repeat][subgroup_labels[i]] = '+'.join(subgroup_elements)
+                # Check if the subgrouping column is numerical (a tuple of ranges was created)
+                if isinstance(value, tuple):
+                    # Create a new column to store the group labels 
+                    # (the original is numbers and the new one will be text so we cant directly replace the numbers)
+                    if 'TextSubgroup' not in KM_data_working.columns:
+                        KM_data_working.insert(repeat+4, 'TextSubgroup', np.nan)
                     
+                    # Get the indices of rows within the range selected
+                    numeric_values = pd.to_numeric(KM_data_working.iloc[:, repeat+3], errors='coerce')
+                    subgroup_rows = (pd.notnull(numeric_values)) & (numeric_values >= value[0]) & (numeric_values < value[1])
+
+                    # Assign the subgroup label to the matching rows
+                    KM_data_working.loc[subgroup_rows, 'TextSubgroup'] = key
+                    
+                    # Add the correct label to the dictionary
+                    correct_group_labels[repeat][key] = f"{value[0]:.2f} to {value[1]:.2f}"
+
+                    # Log the ranges corresponding to each subgroup
+                    log_string = f"Subgroup {j}: {value[0]:.2f} to {value[1]:.2f}"
+                    logger.info(f"[Subgrouping 3rd step] Subgrouping labels applied to variable {repeat+1}---> {log_string}")
+
+                    # Remove empty rows on the new column only when there are no more subgroups left
+                    if subgroup_dict[f"subgroup_{j+1}"] is None:
+                        KM_data_working = KM_data_working[pd.notnull(KM_data_working['TextSubgroup'])]
+                        # Delete the original column and rename the new one with the original name
+                        KM_data_working.drop(subgroup_dict["column"], axis=1, inplace=True)
+                        KM_data_working.rename(columns={'TextSubgroup': subgroup_dict["column"]}, inplace=True)
+                else:
+                    # Generate a mapping of unique values to group labels
+                    element_to_label = {element: key for element in value}
+                    all_tags_selected.append(key)
+
                     # Replace the subgroup elements with the new labels
-                    variable_column_name = KM_data_working.columns[repeat+3]
-                    KM_data_working[variable_column_name] = KM_data_working[variable_column_name].replace(element_to_label)
-            
-                # Filter out rows with new subgroup labels and log the labels selected
-                KM_data_working = KM_data_working[KM_data_working[variable_column_name].isin(subgroup_labels)]
-                log_string = "  -  ".join(label_content_pairs)
-                logger.info(f"[Subgrouping 3rd step] Subgrouping labels applied to variable {repeat+1}---> {log_string} \n")
-            
-            # Log the updated df
-            logger.info(f"[Subgrouping 3rd step] Dataset KM_data_working after applying subgrouping labels: \n {KM_data_working.head(15).to_string()} \n")
+                    KM_data_working[subgroup_dict["column"]] = KM_data_working[subgroup_dict["column"]].replace(element_to_label)
+
+                    # Save and log the labels applied
+                    correct_group_labels[repeat][key] = '+'.join(value)
+                    logger.info(f"[Subgrouping 3rd step] Subgrouping labels applied to variable {repeat+1}---> Subgroup {j}: {value}")
+                    
+                    # Filter out rows without any of the selected tags only when we have no more subgroups left
+                    if subgroup_dict[f"subgroup_{j+1}"] is None:
+                        KM_data_working = KM_data_working[KM_data_working[subgroup_dict["column"]].isin(all_tags_selected)]
+                    
+        # Log the updated df
+        logger.info(f"[Subgrouping 3rd step] Dataset KM_data_working after applying subgrouping labels: \n {KM_data_working.head(15).to_string()} \n")
         ########
         # Once all labels have been applied to each column, make the subgroups
 
@@ -1382,16 +1436,19 @@ def pass_KM_parameters():
         # Plot the estimates of all KMF objects 
         with KM_plot_area:
             KM_plot_area.empty()     
-            plt.figure(figsize=(10, 6))
+            fig, ax = plt.subplots(figsize=(10, 6))
             for label, KM_object in KM_analysis_output.items():
-                KM_object.plot(label=label, ci_show=CI_checkbox.value, iloc=slice(0, int(len(KM_object.survival_function_) * sample_fraction)))
-            plt.xlabel('Time (Months)')
-            plt.ylabel('Probability')
-            plt.title('Kaplan-Meier Estimates')
-            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left') if move_labels_checkbox.value else plt.legend()
-            if at_risk_checkbox.value:
-                add_at_risk_counts(*KM_analysis_output.values(), labels=list(KM_analysis_output.keys()), ax=plt.gca())
-            plt.show()
+                KM_object.plot(label=label, ci_show=CI_checkbox, 
+                               iloc=slice(0, int(len(KM_object.survival_function_) * sample_fraction)))
+            ax.set_title('Kaplan-Meier Estimates', fontsize=16)
+            ax.set_ylabel('Probability', fontsize=14)
+            ax.set_xlabel('Time (Months)', fontsize=14)
+            ax.grid(color='#000000', linestyle='--', linewidth=0.5, alpha=0.5)
+            ax.set_facecolor('#F0F0F0')
+            if move_labels_checkbox:
+                ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            if at_risk_checkbox:
+                add_at_risk_counts(*KM_analysis_output.values(), labels=list(KM_analysis_output.keys()), ax=ax)
     #########################
             
     # Save the KMF objects made by None/Using variable(s) and the figure diplayed to the session state
@@ -1430,7 +1487,6 @@ def KM_analysis(KM_data, KM_subgroups):
 
     # Make a fit for every subset provided (based on the number of groups and subgroups made
     else:
-        
         # Sort the subgroups in alphabetical order to plot them in the same order and colour
         KM_subgroups = OrderedDict(sorted(KM_subgroups.items()))
         
@@ -1458,8 +1514,6 @@ def save_KM_results(generate_plot_button):
     KM_analysis_output = st.session_state.get("KM_analysis_output")
     logger = st.session_state.get("logger")
     file_count = st.session_state.get("file_count", 1)
-    col_2_row_15 = st.session_state["widget_and_output_areas"][12]
-    col_3_row_15 = st.session_state["widget_and_output_areas"][13]
 
     # File names for Excel and plot
     file_count_str = str(file_count).zfill(2)  # Convert to a 2-digit zero-padded string
@@ -1568,24 +1622,8 @@ def save_KM_results(generate_plot_button):
     else:
         # If this rerun does not require making a new excel, use the logged file
         excel_bytes = st.session_state.get("logged_excel")
-
-    ###################### Show the download buttons for the current data
     
-    with col_2_row_15:
-        download_plot = st.download_button(label='Download Plot', data=figure_bytes, 
-                           file_name=plot_filename, type='primary', mime='image/png')
-    with col_3_row_15:
-        download_excel = st.download_button(label='Download Raw Data', data=excel_bytes, 
-                           file_name=excel_filename, type='primary',
-                           mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    # Log the download of any file
-    if download_plot:
-        logger.info(f"A KM plot with the name {plot_filename} has been downloaded \n")
-    if download_excel:
-        logger.info(f"An excel file with the name {excel_filename} has been downloaded \n")
-    # When something is downloaded, increment the file count to avoid multiple files with the same name
-    if download_plot or download_excel:
-        st.session_state["file_count"] = file_count + 1
+    return figure_bytes, plot_filename, excel_bytes, excel_filename
 
 ###################################################################################################
 ######################################### Flow control ############################################
@@ -1609,7 +1647,7 @@ if start_button or "flow_control_1" in st.session_state:
             load_input_files(uploaded_files)
 
         # Process the file(s) to get the information for the main widgets
-        if "time_to_event" not in st.session_state and "event_observation" not in st.session_state:
+        if "time_to_event_selection" not in st.session_state and "event_observation_selection" not in st.session_state:
             file_preprocessing()
         
         # Prepare and display the widgets to generate the plots

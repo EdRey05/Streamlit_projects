@@ -5,11 +5,9 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V06 (Dec 21, 2023): First fully functional version, now it does everything that the Jupyter
-                        notebook used as reference does (see V01 of this app for more info). Both
-                        -None- and -Using variable(s)- options work for clinical alone and also
-                        with the optional RNA file. The only pending things are to revise the
-                        logging and do some minor layout improvements. 
+    V07 (Dec 22, 2023): Second fully functional version. Improvements to the layout and the plot
+                        persistance were done. The last pending thing is to revise the logging
+                        but it is not crucial and not in the immediate roadmap. 
 '''
 ###################################################################################################
 
@@ -47,12 +45,13 @@ st.session_state["alt_colors"] = ['#76448A', '#B03A2E', '#1E8449', '#1F618D', '#
                                   '#2C3E50', '#F1C40F', '#3498DB', '#D35400', '#27AE60']
 # Title
 st.title("Interactive Kaplan-Meier plot generator")
-st.markdown('<hr style="margin-top: +2px; margin-bottom: +2px;">', unsafe_allow_html=True)
+st.markdown('<hr style="margin-top: +2px; margin-bottom: +2px; border-width: 5px;">', unsafe_allow_html=True)
 
 # Sidebar - Initial widgets
 with st.sidebar:
     uploaded_files = st.file_uploader(label="Upload a clinical file (and optionally, a RNA file)", 
                                       type=["txt"], accept_multiple_files=True)
+    st.markdown('<hr style="margin-top: 1px; margin-bottom: 1px; border-width: 5px;">', unsafe_allow_html=True)
     start_button = st.button(label="Begin", type="secondary")
     restart_button = st.button(label="Start over", type="secondary")
 
@@ -233,9 +232,8 @@ def widget_preparation():
     col_1_row_2, col_2_row_2 = st.columns(2, gap="medium")
     st.markdown('<hr style="margin-top: -15px; margin-bottom: -15px;">', unsafe_allow_html=True)
     col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3 = st.columns([2, 2, 1.35, 1.15], gap="medium")
-    st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
+    st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
     col_1_row_14, col_2_row_14, col_3_row_14 = st.columns([0.5, 9, 0.5], gap="medium")
-    st.markdown('<hr style="margin-top: +2px; margin-bottom: +2px;">', unsafe_allow_html=True)
     col_1_row_15, col_2_row_15, col_3_row_15, col_4_row_15 = st.columns(4, gap="small")
     
     # Save the columns and containers in the session state
@@ -262,8 +260,8 @@ def widget_preparation():
 
     # Show widgets to generate+save the plot (with their callback functions), and to customize it
     with st.sidebar:
-        generate_plot_button = st.button(label="Generate plot", type="primary")
-        st.markdown('<hr style="margin-top: 1px; margin-bottom: 1px;">', unsafe_allow_html=True)
+        generate_plot_button = st.button(label="Generate/Update plot", type="primary")
+        st.markdown('<hr style="margin-top: 1px; margin-bottom: 1px; border-width: 5px;">', unsafe_allow_html=True)
         
         # Customize the plot
         st.write("#### Customize your plot here  ⬇️⬇️")
@@ -286,7 +284,6 @@ def widget_preparation():
         previous_plot = st.session_state.get("logged_figure", False)
         if previous_plot and not generate_plot_button:
             with KM_plot_area:
-                
                 st.image(previous_plot)
         else:
             KM_figure = pass_KM_parameters()
@@ -310,9 +307,13 @@ def widget_preparation():
             logger.info(f"A KM plot with the name {plot_filename} has been downloaded \n")
         if download_excel:
             logger.info(f"An excel file with the name {excel_filename} has been downloaded \n")
-        # When something is downloaded, increment the file count to avoid multiple files with the same name
-        if download_plot or download_excel:
-            st.session_state["file_count"] += 1
+    elif "subgroup_buttons_selection" in st.session_state and st.session_state["subgroup_buttons_selection"] == 'Using variable(s)':
+        # Show a message to tell the user where the plot will be shown (middle, below the variable repeats)
+        with col_2_row_14:
+            st.markdown('<div style="display: flex; justify-content: center;">'
+                '<div style="background-color: #1eb53a; padding: 10px; width: fit-content;">'
+                '<span style="font-weight: bold;">Your KM plot will be shown here!</span>'
+                '</div></div>', unsafe_allow_html=True)
 
 ###################################################################################################
 
@@ -460,8 +461,6 @@ def event_observation_dropdown_handler(change):
     with event_observation_output_4:
         subgroup_buttons = st.radio(label="Make subgroups?", options=["None", "Using variable(s)"], index=0)
     if subgroup_buttons:
-        if "logged_figure" in st.session_state:
-            del st.session_state["logged_figure"]
         subgroup_buttons_handler(subgroup_buttons)
     
     # Save the selected events in the session state
@@ -473,6 +472,11 @@ def event_observation_dropdown_handler(change):
 # Function to display the output of subgroup_buttons (slider)
 def subgroup_buttons_handler(change):
     
+    # Clear the plot only when changing between subgrouping options, persist the same otherwise
+    old_selection = st.session_state.get("subgroup_buttons_selection", "None")
+    if old_selection != change and "logged_figure" in st.session_state:
+        del st.session_state["logged_figure"]
+
     # Save the subgroup selection to the session state 
     st.session_state["subgroup_buttons_selection"] = change
 
@@ -521,6 +525,7 @@ def variable_number_slider_handler(change):
     #################### Repeat 1
     if change >= 1:
         # Create a list to store the column containers
+        st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_4, col_2_row_4, col_3_row_4 = st.columns([1,1,1])
         col_1_row_5, col_2_row_5 = st.columns([3,1])
 
@@ -632,6 +637,7 @@ def variable_number_slider_handler(change):
         
     ############### Repeat 2
     if change >= 2:
+        st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_6, col_2_row_6, col_3_row_6 = st.columns([1,1,1])
         col_1_row_7, col_2_row_7 = st.columns([3,1])
 
@@ -743,6 +749,7 @@ def variable_number_slider_handler(change):
 
     ############### Repeat 3
     if change >= 3:
+        st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_8, col_2_row_8, col_3_row_8 = st.columns([1,1,1])
         col_1_row_9, col_2_row_9 = st.columns([3,1])
         
@@ -854,6 +861,7 @@ def variable_number_slider_handler(change):
 
     ############### Repeat 4
     if change >= 4:
+        st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_10, col_2_row_10, col_3_row_10 = st.columns([1,1,1])
         col_1_row_11, col_2_row_11 = st.columns([3,1])
         
@@ -965,6 +973,7 @@ def variable_number_slider_handler(change):
 
     ############### Repeat 5
     if change >= 5:
+        st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_12, col_2_row_12, col_3_row_12 = st.columns([1,1,1])
         col_1_row_13, col_2_row_13 = st.columns([3,1])
         

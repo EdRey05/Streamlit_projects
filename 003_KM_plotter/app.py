@@ -5,9 +5,8 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V07 (Dec 22, 2023): Second fully functional version. Improvements to the layout and the plot
-                        persistance were done. The last pending thing is to revise the logging
-                        but it is not crucial and not in the immediate roadmap. 
+    V08 (Dec 23, 2023): Minor improvements to figure legend and string format consistency. The 
+                        logging has not been revised yet. 
 '''
 ###################################################################################################
 
@@ -40,9 +39,9 @@ st.set_page_config(
     initial_sidebar_state="expanded")
 
 # Use these colors for altair charts
-st.session_state["alt_colors"] = ['#76448A', '#B03A2E', '#1E8449', '#1F618D', '#34495E ',  
-                                  '#D68910', '#707B7C', '#E67E22', '#2E86C1', '#E74C3C',
-                                  '#2C3E50', '#F1C40F', '#3498DB', '#D35400', '#27AE60']
+st.session_state["alt_colors"] = ["#76448A", "#B03A2E", "#1E8449", "#1F618D", "#34495E ",  
+                                  "#D68910", "#707B7C", "#E67E22", "#2E86C1", "#E74C3C",
+                                  "#2C3E50", "#F1C40F", "#3498DB", "#D35400", "#27AE60"]
 # Title
 st.title("Interactive Kaplan-Meier plot generator")
 st.markdown('<hr style="margin-top: +2px; margin-bottom: +2px; border-width: 5px;">', unsafe_allow_html=True)
@@ -64,20 +63,20 @@ def logging_setup():
      if "log_created" not in st.session_state:
         
         # Configure the logging settings
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
         # Create a logger
         logger = logging.getLogger()
 
         # Clear the existing log file or create a new empty one
-        open('MyLog.txt', 'w').close()
+        open("MyLog.txt", "w").close()
 
         # Create a file handler
-        file_handler = logging.FileHandler('MyLog.txt')
+        file_handler = logging.FileHandler("MyLog.txt")
         file_handler.setLevel(logging.INFO)
 
         # Create a formatter and add it to the file handler
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
 
         # Add the file handler to the logger
@@ -96,8 +95,8 @@ def logging_setup():
 def load_input_files(uploaded_files):
 
     # Check if one or two files were uploaded
-    clinical_file = next((file for file in uploaded_files if file.name == 'clinical.txt'), None)
-    RNA_file = next((file for file in uploaded_files if file.name == 'RNA.txt'), None)
+    clinical_file = next((file for file in uploaded_files if file.name == "clinical.txt"), None)
+    RNA_file = next((file for file in uploaded_files if file.name == "RNA.txt"), None)
        
     # Load the files available
     if clinical_file is not None:
@@ -296,18 +295,18 @@ def widget_preparation():
 
         # Show the download buttons for the current data
         with col_2_row_15:
-            download_plot = st.download_button(label='Download Plot', data=figure_bytes, 
-                            file_name=plot_filename, type='primary', mime='image/png')
+            download_plot = st.download_button(label="Download Plot", data=figure_bytes, 
+                            file_name=plot_filename, type="primary", mime="image/png")
         with col_3_row_15:
-            download_excel = st.download_button(label='Download Raw Data', data=excel_bytes, 
-                            file_name=excel_filename, type='primary',
-                            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            download_excel = st.download_button(label="Download Raw Data", data=excel_bytes, 
+                            file_name=excel_filename, type="primary",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         # Log the download of any file
         if download_plot:
             logger.info(f"A KM plot with the name {plot_filename} has been downloaded \n")
         if download_excel:
             logger.info(f"An excel file with the name {excel_filename} has been downloaded \n")
-    elif "subgroup_buttons_selection" in st.session_state and st.session_state["subgroup_buttons_selection"] == 'Using variable(s)':
+    elif "subgroup_buttons_selection" in st.session_state and st.session_state["subgroup_buttons_selection"] == "Using variable(s)":
         # Show a message to tell the user where the plot will be shown (middle, below the variable repeats)
         with col_2_row_14:
             st.markdown('<div style="display: flex; justify-content: center;">'
@@ -345,9 +344,9 @@ def time_to_event_dropdown_handler(change):
         if time_column.dtype != "object":
             alt_data1 = pd.DataFrame({column_name: time_column})
 
-            chart1 = alt.Chart(alt_data1).mark_bar(color='#BA4A00').encode(
-                alt.X(column_name, type='quantitative', bin=alt.Bin(step=12)),
-                alt.Y('count()', title='Patients'),
+            chart1 = alt.Chart(alt_data1).mark_bar(color="#BA4A00").encode(
+                alt.X(column_name, type="quantitative", bin=alt.Bin(step=12)),
+                alt.Y("count()", title="Patients"),
                 ).properties(width=425, height=325
                 ).configure_axis(labelColor="#3386BD")
             logger.info(f"A histogram was successfully made and displayed for: {column_name} \n")
@@ -415,8 +414,8 @@ def event_observation_dropdown_handler(change):
                 logger.warning("User attention required: There may be something wrong with the event observation column as there are more than 15 unique values. \n")
             
             chart2 = alt.Chart(value_counts.reset_index()).mark_bar().encode(
-                    alt.X(column_name, type='nominal', axis=alt.Axis(labelAngle=0)),
-                    alt.Y('count', title="Patients"),
+                    alt.X(column_name, type="nominal", axis=alt.Axis(labelAngle=0)),
+                    alt.Y("count", title="Patients"),
                     alt.Color(column_name, scale=alt.Scale(domain=list(value_counts.index), range=alt_colors))
                     ).properties(width=425, height=325
                     ).configure_axis(labelColor="#3386BD",
@@ -485,7 +484,7 @@ def subgroup_buttons_handler(change):
     subgroup_buttons_output = st.session_state["widget_and_output_areas"][7]
     
     # If the user wants to make subgroups, ask the number of variables to use
-    if change == 'Using variable(s)':
+    if change == "Using variable(s)":
         logger.info(f"The user selected: Use variable(s)     Widget: subgroup_buttons \n")
         
         # Variables that need to be initialized with specific values/number of items
@@ -532,24 +531,24 @@ def variable_number_slider_handler(change):
         # Show the first widget - dataset dropdown
         with col_1_row_4:
             dataset_dropdown_1 = st.selectbox(label="Select a dataset:", 
-                        options=['Click here to select...', 'clinical'] + (['RNA'] if df_RNA is not None else []),
+                        options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
                         index=0, key="dataset_dropdown_1")
         
         # When something is selected in the first widget, show two more in the same row
-        if dataset_dropdown_1 == 'clinical':
+        if dataset_dropdown_1 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
             with col_2_row_4:
                 variable_dropdown_1 = st.selectbox(label="Select a variable:",
-                                    options=['Click here to select...'] + list(df_clinical.columns[1:]),
+                                    options=["Click here to select..."] + list(df_clinical.columns[1:]),
                                     index=0, key="variable_dropdown_1")
             # And a slider to select the number of subgroups to make
             with col_3_row_4:
                 subgroup_slider_1 = st.slider(label="Number of subgroups:",
                                 min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_1") 
-        elif dataset_dropdown_1 == 'RNA':
+        elif dataset_dropdown_1 == "RNA":
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_4:
-                variable_dropdown_1 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                variable_dropdown_1 = st_searchbox(search_function=search_genes, default="Click here to select...", 
                                 label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_1rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_4:
@@ -559,7 +558,7 @@ def variable_number_slider_handler(change):
         # Encapsulate these checks for the two additional widgets as they don't exist until a dataset is selected
         try:
             # When a variable is selected in either dropdown or searchbox, make a bar chart or histogram
-            if variable_dropdown_1 != 'Click here to select...':
+            if variable_dropdown_1 != "Click here to select...":
                 # There is a function that creates the appropriate plot, we just need the variable and repeat number
                 variable_figure_1 = variables_selection_handler(variable_dropdown_1, 1)
                 
@@ -572,13 +571,13 @@ def variable_number_slider_handler(change):
                         st.altair_chart(variable_figure_1)
                 
                 # Prepare the label options to make subgroups by either tags or float ranges
-                if dataset_dropdown_1 == 'clinical':
+                if dataset_dropdown_1 == "clinical":
                     if df_clinical[variable_dropdown_1].dtype == "object": 
                         subgrouping_options_1 = ["tags"] + list(df_clinical[variable_dropdown_1].unique())
                     else:
-                        subgrouping_options_1 = ["ranges"] + df_clinical[variable_dropdown_1].agg(['min', 'max']).tolist()
-                elif dataset_dropdown_1 == 'RNA':
-                    subgrouping_options_1 = ["ranges"] + df_RNA[variable_dropdown_1].agg(['min', 'max']).tolist()
+                        subgrouping_options_1 = ["ranges"] + df_clinical[variable_dropdown_1].agg(["min", "max"]).tolist()
+                elif dataset_dropdown_1 == "RNA":
+                    subgrouping_options_1 = ["ranges"] + df_RNA[variable_dropdown_1].agg(["min", "max"]).tolist()
                 
             # When the slider is changed, show additional widgets to specify the subgroups
             if subgroup_slider_1 == 1:
@@ -644,24 +643,24 @@ def variable_number_slider_handler(change):
         # Show the first widget - dataset dropdown
         with col_1_row_6:
             dataset_dropdown_2 = st.selectbox(label="Select a dataset:", 
-                        options=['Click here to select...', 'clinical'] + (['RNA'] if df_RNA is not None else []),
+                        options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
                         index=0, key="dataset_dropdown_2")
             
         # When something is selected in the first widget, show two more in the same row
-        if dataset_dropdown_2 == 'clinical':
+        if dataset_dropdown_2 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
             with col_2_row_6:
                 variable_dropdown_2 = st.selectbox(label="Select a variable:",
-                                    options=['Click here to select...'] + list(df_clinical.columns[1:]),
+                                    options=["Click here to select..."] + list(df_clinical.columns[1:]),
                                     index=0, key="variable_dropdown_2")
             # And a slider to select the number of subgroups to make
             with col_3_row_6:
                 subgroup_slider_2 = st.slider(label="Number of subgroups:",
                                 min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_2") 
-        elif dataset_dropdown_2 == 'RNA':
+        elif dataset_dropdown_2 == "RNA":
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_6:
-                variable_dropdown_2 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                variable_dropdown_2 = st_searchbox(search_function=search_genes, default="Click here to select...", 
                      label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_2rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_6:
@@ -671,7 +670,7 @@ def variable_number_slider_handler(change):
         # Encapsulate these checks for the two additional widgets as they don't exist until a dataset is selected
         try:
             # When a variable is selected in either dropdown or searchbox, make a bar chart or histogram
-            if variable_dropdown_2 != 'Click here to select...':
+            if variable_dropdown_2 != "Click here to select...":
                 # There is a function that creates the appropriate plot, we just need the variable and repeat number
                 variable_figure_2 = variables_selection_handler(variable_dropdown_2, 2)
                 
@@ -684,13 +683,13 @@ def variable_number_slider_handler(change):
                         st.altair_chart(variable_figure_2)
                 
                 # Prepare the label options to make subgroups by either tags or float ranges
-                if dataset_dropdown_2 == 'clinical':
+                if dataset_dropdown_2 == "clinical":
                     if df_clinical[variable_dropdown_2].dtype == "object": 
                         subgrouping_options_2 = ["tags"] + list(df_clinical[variable_dropdown_2].unique())
                     else:
-                        subgrouping_options_2 = ["ranges"] + df_clinical[variable_dropdown_2].agg(['min', 'max']).tolist()
-                elif dataset_dropdown_2 == 'RNA':
-                    subgrouping_options_2 = ["ranges"] + df_RNA[variable_dropdown_2].agg(['min', 'max']).tolist()
+                        subgrouping_options_2 = ["ranges"] + df_clinical[variable_dropdown_2].agg(["min", "max"]).tolist()
+                elif dataset_dropdown_2 == "RNA":
+                    subgrouping_options_2 = ["ranges"] + df_RNA[variable_dropdown_2].agg(["min", "max"]).tolist()
                 
             # When the slider is changed, show additional widgets to specify the subgroups
             if subgroup_slider_2 == 1:
@@ -756,34 +755,34 @@ def variable_number_slider_handler(change):
         # Show the first widget - dataset dropdown
         with col_1_row_8:
             dataset_dropdown_3 = st.selectbox(label="Select a dataset:", 
-                                              options=['Click here to select...', 'clinical'] + (['RNA'] if df_RNA is not None else []),
+                                              options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
                                               index=0, key="dataset_dropdown_3")
             
         # When something is selected in the first widget, show two more in the same row
-        if dataset_dropdown_3 == 'clinical':
+        if dataset_dropdown_3 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
             with col_2_row_8:
                 variable_dropdown_3 = st.selectbox(label="Select a variable:",
-                                                   options=['Click here to select...'] + list(df_clinical.columns[1:]),
+                                                   options=["Click here to select..."] + list(df_clinical.columns[1:]),
                                                    index=0, key="variable_dropdown_3")
             # And a slider to select the number of subgroups to make
             with col_3_row_8:
                 subgroup_slider_3 = st.slider(label="Number of subgroups:",
                                               min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_3") 
-        elif dataset_dropdown_3 == 'RNA':
+        elif dataset_dropdown_3 == "RNA":
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_8:
-                variable_dropdown_3 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                variable_dropdown_3 = st_searchbox(search_function=search_genes, default="Click here to select...", 
                                 label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_3rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_8:
                 subgroup_slider_3 = st.slider(label="Number of subgroups:",
                                               min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_3")
         
-        # Encapsulate these checks for the two additional widgets as they don't exist until a dataset is selected
+        # Encapsulate these checks for the two additional widgets as they don"t exist until a dataset is selected
         try:
             # When a variable is selected in either dropdown or searchbox, make a bar chart or histogram
-            if variable_dropdown_3 != 'Click here to select...':
+            if variable_dropdown_3 != "Click here to select...":
                 # There is a function that creates the appropriate plot, we just need the variable and repeat number
                 variable_figure_3 = variables_selection_handler(variable_dropdown_3, 3)
 
@@ -796,13 +795,13 @@ def variable_number_slider_handler(change):
                         st.altair_chart(variable_figure_3)
 
                 # Prepare the label options to make subgroups by either tags or float ranges
-                if dataset_dropdown_3 == 'clinical':
+                if dataset_dropdown_3 == "clinical":
                     if df_clinical[variable_dropdown_3].dtype == "object": 
                         subgrouping_options_3 = ["tags"] + list(df_clinical[variable_dropdown_3].unique())
                     else:
-                        subgrouping_options_3 = ["ranges"] + df_clinical[variable_dropdown_3].agg(['min', 'max']).tolist()
-                elif dataset_dropdown_3 == 'RNA':
-                    subgrouping_options_3 = ["ranges"] + df_RNA[variable_dropdown_3].agg(['min', 'max']).tolist()
+                        subgrouping_options_3 = ["ranges"] + df_clinical[variable_dropdown_3].agg(["min", "max"]).tolist()
+                elif dataset_dropdown_3 == "RNA":
+                    subgrouping_options_3 = ["ranges"] + df_RNA[variable_dropdown_3].agg(["min", "max"]).tolist()
                 
             # When the slider is changed, show additional widgets to specify the subgroups
             if subgroup_slider_3 == 1:
@@ -868,34 +867,34 @@ def variable_number_slider_handler(change):
         # Show the first widget - dataset dropdown
         with col_1_row_10:
             dataset_dropdown_4 = st.selectbox(label="Select a dataset:", 
-                                              options=['Click here to select...', 'clinical'] + (['RNA'] if df_RNA is not None else []),
+                                              options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
                                               index=0, key="dataset_dropdown_4")
             
         # When something is selected in the first widget, show two more in the same row
-        if dataset_dropdown_4 == 'clinical':
+        if dataset_dropdown_4 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
             with col_2_row_10:
                 variable_dropdown_4 = st.selectbox(label="Select a variable:",
-                                                   options=['Click here to select...'] + list(df_clinical.columns[1:]),
+                                                   options=["Click here to select..."] + list(df_clinical.columns[1:]),
                                                    index=0, key="variable_dropdown_4")
             # And a slider to select the number of subgroups to make
             with col_3_row_10:
                 subgroup_slider_4 = st.slider(label="Number of subgroups:",
                                               min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_4") 
-        elif dataset_dropdown_4 == 'RNA':
+        elif dataset_dropdown_4 == "RNA":
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_10:
-                variable_dropdown_4 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                variable_dropdown_4 = st_searchbox(search_function=search_genes, default="Click here to select...", 
                                 label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_4rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_10:
                 subgroup_slider_4 = st.slider(label="Number of subgroups:",
                                               min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_4")
 
-        # Encapsulate these checks for the two additional widgets as they don't exist until a dataset is selected
+        # Encapsulate these checks for the two additional widgets as they don"t exist until a dataset is selected
         try:
             # When a variable is selected in either dropdown or searchbox, make a bar chart or histogram
-            if variable_dropdown_4 != 'Click here to select...':
+            if variable_dropdown_4 != "Click here to select...":
                 # There is a function that creates the appropriate plot, we just need the variable and repeat number
                 variable_figure_4 = variables_selection_handler(variable_dropdown_4, 4)
 
@@ -908,13 +907,13 @@ def variable_number_slider_handler(change):
                         st.altair_chart(variable_figure_4)
 
                 # Prepare the label options to make subgroups by either tags or float ranges
-                if dataset_dropdown_4 == 'clinical':
+                if dataset_dropdown_4 == "clinical":
                     if df_clinical[variable_dropdown_4].dtype == "object": 
                         subgrouping_options_4 = ["tags"] + list(df_clinical[variable_dropdown_4].unique())
                     else:
-                        subgrouping_options_4 = ["ranges"] + df_clinical[variable_dropdown_4].agg(['min', 'max']).tolist()
-                elif dataset_dropdown_4 == 'RNA':
-                    subgrouping_options_4 = ["ranges"] + df_RNA[variable_dropdown_4].agg(['min', 'max']).tolist()
+                        subgrouping_options_4 = ["ranges"] + df_clinical[variable_dropdown_4].agg(["min", "max"]).tolist()
+                elif dataset_dropdown_4 == "RNA":
+                    subgrouping_options_4 = ["ranges"] + df_RNA[variable_dropdown_4].agg(["min", "max"]).tolist()
                 
             # When the slider is changed, show additional widgets to specify the subgroups
             if subgroup_slider_4 == 1:
@@ -980,34 +979,34 @@ def variable_number_slider_handler(change):
         # Show the first widget - dataset dropdown
         with col_1_row_12:
             dataset_dropdown_5 = st.selectbox(label="Select a dataset:", 
-                                              options=['Click here to select...', 'clinical'] + (['RNA'] if df_RNA is not None else []),
+                                              options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
                                               index=0, key="dataset_dropdown_5")
             
         # When something is selected in the first widget, show two more in the same row
-        if dataset_dropdown_5 == 'clinical':
+        if dataset_dropdown_5 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
             with col_2_row_12:
                 variable_dropdown_5 = st.selectbox(label="Select a variable:",
-                                                   options=['Click here to select...'] + list(df_clinical.columns[1:]),
+                                                   options=["Click here to select..."] + list(df_clinical.columns[1:]),
                                                    index=0, key="variable_dropdown_5")
             # And a slider to select the number of subgroups to make
             with col_3_row_12:
                 subgroup_slider_5 = st.slider(label="Number of subgroups:",
                                               min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_5") 
-        elif dataset_dropdown_5 == 'RNA':
+        elif dataset_dropdown_5 == "RNA":
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_12:
-                variable_dropdown_5 = st_searchbox(search_function=search_genes, default='Click here to select...', 
+                variable_dropdown_5 = st_searchbox(search_function=search_genes, default="Click here to select...", 
                                 label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_5rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_12:
                 subgroup_slider_5 = st.slider(label="Number of subgroups:",
                                               min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_5")
 
-        # Encapsulate these checks for the two additional widgets as they don't exist until a dataset is selected
+        # Encapsulate these checks for the two additional widgets as they don"t exist until a dataset is selected
         try:
             # When a variable is selected in either dropdown or searchbox, make a bar chart or histogram
-            if variable_dropdown_5 != 'Click here to select...':
+            if variable_dropdown_5 != "Click here to select...":
                 # There is a function that creates the appropriate plot, we just need the variable and repeat number
                 variable_figure_5 = variables_selection_handler(variable_dropdown_5, 5)
 
@@ -1020,13 +1019,13 @@ def variable_number_slider_handler(change):
                         st.altair_chart(variable_figure_5)
 
                 # Prepare the label options to make subgroups by either tags or float ranges
-                if dataset_dropdown_5 == 'clinical':
+                if dataset_dropdown_5 == "clinical":
                     if df_clinical[variable_dropdown_5].dtype == "object": 
                         subgrouping_options_5 = ["tags"] + list(df_clinical[variable_dropdown_5].unique())
                     else:
-                        subgrouping_options_5 = ["ranges"] + df_clinical[variable_dropdown_5].agg(['min', 'max']).tolist()
-                elif dataset_dropdown_5 == 'RNA':
-                    subgrouping_options_5 = ["ranges"] + df_RNA[variable_dropdown_5].agg(['min', 'max']).tolist()
+                        subgrouping_options_5 = ["ranges"] + df_clinical[variable_dropdown_5].agg(["min", "max"]).tolist()
+                elif dataset_dropdown_5 == "RNA":
+                    subgrouping_options_5 = ["ranges"] + df_RNA[variable_dropdown_5].agg(["min", "max"]).tolist()
                 
             # When the slider is changed, show additional widgets to specify the subgroups
             if subgroup_slider_5 == 1:
@@ -1165,16 +1164,16 @@ def variables_selection_handler(change, repeat):
     # Look for the selected column in either df, as it is not specified within this function
     if change in df_clinical.columns:
         # Keep only the working columns, log it and extract the column to plot the values
-        KM_data_1var = KM_data_1var[['PATIENT_ID', time_to_event_selection, event_observation_selection, change]]          
+        KM_data_1var = KM_data_1var[["PATIENT_ID", time_to_event_selection, event_observation_selection, change]]          
         logger.info(f"[Subgrouping 2nd step] The column {change} -{KM_data_1var.dtypes[change]} dtype- from df_clinical was selected to make subgroups. \n")
         column_data[repeat - 1] = KM_data_1var[change].copy()
         
     # If the column is in df_RNA, joining is required to combine it with the clinical columns
     elif df_RNA is not None and change in df_RNA.columns:
         # Keep only the working columns from both dfs, log it and extract the column to plot the values
-        KM_data_1var = KM_data_1var[['PATIENT_ID', time_to_event_selection, event_observation_selection]]
-        df_RNA2 = df_RNA[['PATIENT_ID', change]].copy()
-        KM_data_1var = KM_data_1var.merge(df_RNA2, on='PATIENT_ID', how='inner')
+        KM_data_1var = KM_data_1var[["PATIENT_ID", time_to_event_selection, event_observation_selection]]
+        df_RNA2 = df_RNA[["PATIENT_ID", change]].copy()
+        KM_data_1var = KM_data_1var.merge(df_RNA2, on="PATIENT_ID", how="inner")
         logger.info(f"[Subgrouping 2nd step] The column {change} -{KM_data_1var.dtypes[change]} dtype- from df_RNA was selected to make subgroups. \n")
         column_data[repeat - 1] = KM_data_1var[change].copy()
 
@@ -1184,14 +1183,14 @@ def variables_selection_handler(change, repeat):
 
     ##### Step 03
     # Make and display a bar chart for text columns showing the counts for unique values
-    if column_data[repeat - 1].dtype == 'object':
+    if column_data[repeat - 1].dtype == "object":
         alt_data3 = column_data[repeat - 1].value_counts(dropna=False).reset_index()
-        alt_data3.columns = [change, 'count']
-        alt_data3[change] = alt_data3[change].fillna('NaN')
+        alt_data3.columns = [change, "count"]
+        alt_data3[change] = alt_data3[change].fillna("NaN")
 
         chart3 = alt.Chart(alt_data3).mark_bar().encode(
-            alt.X(change, type='nominal', axis=alt.Axis(labelAngle=-75)),
-            alt.Y('count', title="Patients"),
+            alt.X(change, type="nominal", axis=alt.Axis(labelAngle=-75)),
+            alt.Y("count", title="Patients"),
             alt.Color(change, scale=alt.Scale(domain=list(alt_data3[change]), range=alt_colors))
             ).properties(width=500, height=400
             ).configure_axis(labelColor="#3386BD"
@@ -1199,9 +1198,9 @@ def variables_selection_handler(change, repeat):
     else:
         # Make and display a histogram of frequencies for numerical columns
         alt_data3 = pd.DataFrame({change : column_data[repeat - 1]})
-        chart3 = alt.Chart(alt_data3).mark_bar(color='#1D8348').encode(
-                alt.X(change, type='quantitative', bin=alt.Bin(maxbins=50)),
-                alt.Y('count()', title='Patients'),
+        chart3 = alt.Chart(alt_data3).mark_bar(color="#1D8348").encode(
+                alt.X(change, type="quantitative", bin=alt.Bin(maxbins=50)),
+                alt.Y("count()", title="Patients"),
                 ).properties(width=500, height=400
                 ).configure_axis(labelColor="#3386BD")
     
@@ -1267,7 +1266,7 @@ def pass_KM_parameters():
             st.stop()
 
     # If no subgrouping is required, apply the event tags and pass the data to KM_analysis
-    if subgroup_buttons_selection == 'None':
+    if subgroup_buttons_selection == "None":
         # Apply the selected labels on the event observation column 
         KM_data = df_clinical.copy()
         for tag in event_0:
@@ -1281,7 +1280,7 @@ def pass_KM_parameters():
         logger.info(f"[No subgroups 1st step] Data types of KM_data columns: \n {KM_data.dtypes.to_string()} \n\n")
                 
         # Filter out non-desired values and convert column to numbers for the KM Fitter
-        KM_data = KM_data[['PATIENT_ID', time_to_event_selection, event_observation_selection]]
+        KM_data = KM_data[["PATIENT_ID", time_to_event_selection, event_observation_selection]]
         KM_data = KM_data.loc[KM_data[event_observation_selection].isin(["0", "1"])]
         KM_data = KM_data.dropna(subset=[time_to_event_selection])
         KM_data[event_observation_selection] = KM_data[event_observation_selection].astype(int)
@@ -1298,11 +1297,11 @@ def pass_KM_parameters():
         fig, ax = plt.subplots(figsize=(10, 6))
         KM_analysis_output.plot(ci_show=CI_checkbox, legend=False,  
                     iloc=slice(0, int(len(KM_analysis_output.survival_function_) * sample_fraction)))
-        ax.set_title('Kaplan-Meier Estimates', fontsize=16)
-        ax.set_ylabel('Probability', fontsize=14)
-        ax.set_xlabel('Time (Months)', fontsize=14)
-        ax.grid(color='#000000', linestyle='--', linewidth=0.5, alpha=0.5)
-        ax.set_facecolor('#F0F0F0')
+        ax.set_title("Kaplan-Meier Estimates", fontsize=16)
+        ax.set_ylabel("Probability", fontsize=14)
+        ax.set_xlabel("Time (Months)", fontsize=14)
+        ax.grid(color="#000000", linestyle="--", linewidth=0.5, alpha=0.5)
+        ax.set_facecolor("#F0F0F0")
         if at_risk_checkbox:
             add_at_risk_counts(KM_analysis_output, labels=["Label"], ax=ax)
 
@@ -1344,15 +1343,15 @@ def pass_KM_parameters():
                 if isinstance(value, tuple):
                     # Create a new column to store the group labels 
                     # (the original is numbers and the new one will be text so we cant directly replace the numbers)
-                    if 'TextSubgroup' not in KM_data_working.columns:
-                        KM_data_working.insert(repeat+4, 'TextSubgroup', np.nan)
+                    if "TextSubgroup" not in KM_data_working.columns:
+                        KM_data_working.insert(repeat+4, "TextSubgroup", np.nan)
                     
                     # Get the indices of rows within the range selected
-                    numeric_values = pd.to_numeric(KM_data_working.iloc[:, repeat+3], errors='coerce')
+                    numeric_values = pd.to_numeric(KM_data_working.iloc[:, repeat+3], errors="coerce")
                     subgroup_rows = (pd.notnull(numeric_values)) & (numeric_values >= value[0]) & (numeric_values < value[1])
 
                     # Assign the subgroup label to the matching rows
-                    KM_data_working.loc[subgroup_rows, 'TextSubgroup'] = key
+                    KM_data_working.loc[subgroup_rows, "TextSubgroup"] = key
                     
                     # Add the correct label to the dictionary
                     correct_group_labels[repeat][key] = f"{value[0]:.2f} to {value[1]:.2f}"
@@ -1363,10 +1362,10 @@ def pass_KM_parameters():
 
                     # Remove empty rows on the new column only when there are no more subgroups left
                     if subgroup_dict[f"subgroup_{j+1}"] is None:
-                        KM_data_working = KM_data_working[pd.notnull(KM_data_working['TextSubgroup'])]
+                        KM_data_working = KM_data_working[pd.notnull(KM_data_working["TextSubgroup"])]
                         # Delete the original column and rename the new one with the original name
                         KM_data_working.drop(subgroup_dict["column"], axis=1, inplace=True)
-                        KM_data_working.rename(columns={'TextSubgroup': subgroup_dict["column"]}, inplace=True)
+                        KM_data_working.rename(columns={"TextSubgroup": subgroup_dict["column"]}, inplace=True)
                 else:
                     # Generate a mapping of unique values to group labels
                     element_to_label = {element: key for element in value}
@@ -1376,7 +1375,7 @@ def pass_KM_parameters():
                     KM_data_working[subgroup_dict["column"]] = KM_data_working[subgroup_dict["column"]].replace(element_to_label)
 
                     # Save and log the labels applied
-                    correct_group_labels[repeat][key] = '+'.join(value)
+                    correct_group_labels[repeat][key] = "+".join(value)
                     logger.info(f"[Subgrouping 3rd step] Subgrouping labels applied to variable {repeat+1}---> Subgroup {j}: {value}")
                     
                     # Filter out rows without any of the selected tags only when we have no more subgroups left
@@ -1390,6 +1389,7 @@ def pass_KM_parameters():
 
         # Get the column indices for the extra columns
         extra_column_indices = range(3, 3 + variable_repeats)
+        extra_column_names = ", ".join(KM_data_working.columns[i] for i in extra_column_indices)
         
         # Get the unique values for each extra column
         extra_column_unique_values = [KM_data_working.iloc[:, i].unique() for i in extra_column_indices]
@@ -1437,7 +1437,7 @@ def pass_KM_parameters():
                 new_key.append(correct_group_labels[i].get(label, label))
         
             # Convert the new key (list) to a single string
-            new_key = ', '.join(new_key)
+            new_key = ", ".join(new_key)
         
             # Replace the current key with the corrected_key in the KM_analysis_output dictionary
             KM_analysis_output[new_key] = KM_analysis_output.pop(old_key)
@@ -1449,13 +1449,14 @@ def pass_KM_parameters():
             for label, KM_object in KM_analysis_output.items():
                 KM_object.plot(label=label, ci_show=CI_checkbox, 
                                iloc=slice(0, int(len(KM_object.survival_function_) * sample_fraction)))
-            ax.set_title('Kaplan-Meier Estimates', fontsize=16)
-            ax.set_ylabel('Probability', fontsize=14)
-            ax.set_xlabel('Time (Months)', fontsize=14)
-            ax.grid(color='#000000', linestyle='--', linewidth=0.5, alpha=0.5)
-            ax.set_facecolor('#F0F0F0')
+            ax.set_title("Kaplan-Meier Estimates", fontsize=16)
+            ax.set_ylabel("Probability", fontsize=14)
+            ax.set_xlabel("Time (Months)", fontsize=14)
+            ax.legend(title=extra_column_names)
+            ax.grid(color="#000000", linestyle="--", linewidth=0.5, alpha=0.5)
+            ax.set_facecolor("#F0F0F0")
             if move_labels_checkbox:
-                ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                ax.legend(title=extra_column_names , bbox_to_anchor=(1.05, 1), loc="upper left")
             if at_risk_checkbox:
                 add_at_risk_counts(*KM_analysis_output.values(), labels=list(KM_analysis_output.keys()), ax=ax)
     #########################
@@ -1463,9 +1464,9 @@ def pass_KM_parameters():
     # Save the KMF objects made by None/Using variable(s) and the figure diplayed to the session state
     st.session_state["KM_analysis_output"] = KM_analysis_output
     figure_bytes = io.BytesIO()
-    plt.savefig(figure_bytes, format='jpg', dpi=600, bbox_inches='tight')
+    plt.savefig(figure_bytes, format="jpg", dpi=600, bbox_inches="tight")
     figure_bytes.seek(0)
-    st.session_state['logged_figure'] = figure_bytes
+    st.session_state["logged_figure"] = figure_bytes
 
     return plt.gcf()
 
@@ -1482,7 +1483,7 @@ def KM_analysis(KM_data, KM_subgroups):
     subgroup_buttons_selection = st.session_state.get("subgroup_buttons_selection")
 
     # Use the whole dataset when no groups were made
-    if subgroup_buttons_selection == 'None':
+    if subgroup_buttons_selection == "None":
 
         # Create a single KaplanMeierFitter object
         KMF_object = KaplanMeierFitter()
@@ -1532,7 +1533,7 @@ def save_KM_results(generate_plot_button):
     ###################### Make the plot available for download
 
     # Get the data from the plot already being displayed
-    figure_bytes = st.session_state.get('logged_figure')
+    figure_bytes = st.session_state.get("logged_figure")
 
     ###################### Make the Excel file available for download
 
@@ -1541,7 +1542,7 @@ def save_KM_results(generate_plot_button):
         
         # Create a new Excel workbook and remove the default Sheet
         workbook = openpyxl.Workbook()
-        workbook.remove(workbook['Sheet'])
+        workbook.remove(workbook["Sheet"])
         
         # Prepare the data to be processed (single KM object or list of KM objects)
         if isinstance(KM_analysis_output, dict):
@@ -1561,7 +1562,7 @@ def save_KM_results(generate_plot_button):
 
             # Write what the curve/object corresponds to
             sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=13)
-            sheet.cell(row=2, column=1).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            sheet.cell(row=2, column=1).alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
             sheet.cell(row=2, column=1, value=real_labels[index]).font = openpyxl.styles.Font(bold=True, size=16)
 
             # Get the tables from the KMF object
@@ -1599,11 +1600,11 @@ def save_KM_results(generate_plot_button):
             ##### Extra worksheet formatting 
             # Merge and center table titles
             sheet.merge_cells(start_row=4, start_column=1, end_row=4, end_column=5)
-            sheet.cell(row=4, column=1).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            sheet.cell(row=4, column=1).alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
             sheet.merge_cells(start_row=4, start_column=7, end_row=4, end_column=8)
-            sheet.cell(row=4, column=7).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            sheet.cell(row=4, column=7).alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
             sheet.merge_cells(start_row=4, start_column=10, end_row=4, end_column=11)
-            sheet.cell(row=4, column=10).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            sheet.cell(row=4, column=10).alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
             
             # Write column titles and center them
             sheet.cell(row=5, column=1, value="Removed")
@@ -1616,10 +1617,10 @@ def save_KM_results(generate_plot_button):
             sheet.cell(row=5, column=10, value="Lower Bound")
             sheet.cell(row=5, column=11, value="Upper Bound")
             for cell in ["A5", "B5", "C5", "D5", "E5", "G5", "H5", "J5", "K5"]:
-                sheet[cell].alignment = openpyxl.styles.Alignment(horizontal='center')
+                sheet[cell].alignment = openpyxl.styles.Alignment(horizontal="center")
             
             # Adjust some column widths
-            for column, width in zip(['H', 'J', 'K', 'M'], [10, 12, 12, 22]):
+            for column, width in zip(["H", "J", "K", "M"], [10, 12, 12, 22]):
                 sheet.column_dimensions[column].width = width
             #####
         
@@ -1627,7 +1628,7 @@ def save_KM_results(generate_plot_button):
         excel_bytes = io.BytesIO()
         workbook.save(excel_bytes)
         excel_bytes.seek(0)
-        st.session_state['logged_excel'] = excel_bytes
+        st.session_state["logged_excel"] = excel_bytes
     else:
         # If this rerun does not require making a new excel, use the logged file
         excel_bytes = st.session_state.get("logged_excel")

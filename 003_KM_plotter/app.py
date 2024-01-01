@@ -5,8 +5,8 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V08 (Dec 23, 2023): Minor improvements to figure legend and string format consistency. The 
-                        logging has not been revised yet. 
+    V09 (Jan 01, 2024): Minor improvement to tag widgets and fixed a bug on the 5th subgroup for any
+                    variable. The logging has not been revised yet. 
 '''
 ###################################################################################################
 
@@ -588,8 +588,8 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_1 >= 2:
                     if subgrouping_options_1[0] == "tags":
                         with col_2_row_5:
-                            subgroup_1_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_1)
-                            subgroup_1_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_1)
+                            subgroup_1_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_1[1:])
+                            subgroup_1_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_1[1:])
                     else:
                         with col_2_row_5:
                             subgroup_1_1 = st.slider(label="Subgroup 1:", step=0.1,
@@ -603,7 +603,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_1 >= 3:
                     if subgrouping_options_1[0] == "tags":
                         with col_2_row_5:
-                            subgroup_1_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_1)
+                            subgroup_1_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_1[1:])
                     else:
                         with col_2_row_5:
                             subgroup_1_3 = st.slider(label="Subgroup 3:", step=0.1,
@@ -613,7 +613,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_1 >= 4:
                     if subgrouping_options_1[0] == "tags":
                         with col_2_row_5:
-                            subgroup_1_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_1)
+                            subgroup_1_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_1[1:])
                     else:
                         with col_2_row_5:
                             subgroup_1_4 = st.slider(label="Subgroup 4:", step=0.1,
@@ -623,7 +623,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_1 >= 5:
                     if subgrouping_options_1[0] == "tags":
                         with col_2_row_5:
-                            subgroup_1_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_1)
+                            subgroup_1_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_1[1:])
                     else:
                         with col_2_row_5:
                             subgroup_1_5 = st.slider(label="Subgroup 5:", step=0.1,
@@ -700,8 +700,8 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_2 >= 2:
                     if subgrouping_options_2[0] == "tags":
                         with col_2_row_7:
-                            subgroup_2_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_2)
-                            subgroup_2_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_2)
+                            subgroup_2_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_2[1:])
+                            subgroup_2_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_2[1:])
                     else:
                         with col_2_row_7:
                             subgroup_2_1 = st.slider(label="Subgroup 1:", step=0.1,
@@ -715,7 +715,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_2 >= 3:
                     if subgrouping_options_2[0] == "tags":
                         with col_2_row_7:
-                            subgroup_2_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_2)
+                            subgroup_2_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_2[1:])
                     else:
                         with col_2_row_7:
                             subgroup_2_3 = st.slider(label="Subgroup 3:", step=0.1,
@@ -725,7 +725,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_2 >= 4:
                     if subgrouping_options_2[0] == "tags":
                         with col_2_row_7:
-                            subgroup_2_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_2)
+                            subgroup_2_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_2[1:])
                     else:
                         with col_2_row_7:
                             subgroup_2_4 = st.slider(label="Subgroup 4:", step=0.1,
@@ -735,7 +735,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_2 >= 5:
                     if subgrouping_options_2[0] == "tags":
                         with col_2_row_7:
-                            subgroup_2_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_2)
+                            subgroup_2_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_2[1:])
                     else:
                         with col_2_row_7:
                             subgroup_2_5 = st.slider(label="Subgroup 5:", step=0.1,
@@ -812,8 +812,8 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_3 >= 2:
                     if subgrouping_options_3[0] == "tags":
                         with col_2_row_9:
-                            subgroup_3_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_3)
-                            subgroup_3_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_3)
+                            subgroup_3_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_3[1:])
+                            subgroup_3_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_3[1:])
                     else:
                         with col_2_row_9:
                             subgroup_3_1 = st.slider(label="Subgroup 1:", step=0.1,
@@ -827,7 +827,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_3 >= 3:
                     if subgrouping_options_3[0] == "tags":
                         with col_2_row_9:
-                            subgroup_3_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_3)
+                            subgroup_3_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_3[1:])
                     else:
                         with col_2_row_9:
                             subgroup_3_3 = st.slider(label="Subgroup 3:", step=0.1,
@@ -837,7 +837,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_3 >= 4:
                     if subgrouping_options_3[0] == "tags":
                         with col_2_row_9:
-                            subgroup_3_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_3)
+                            subgroup_3_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_3[1:])
                     else:
                         with col_2_row_9:
                             subgroup_3_4 = st.slider(label="Subgroup 4:", step=0.1,
@@ -847,7 +847,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_3 >= 5:
                     if subgrouping_options_3[0] == "tags":
                         with col_2_row_9:
-                            subgroup_3_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_3)
+                            subgroup_3_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_3[1:])
                     else:
                         with col_2_row_9:
                             subgroup_3_5 = st.slider(label="Subgroup 5:", step=0.1,
@@ -924,8 +924,8 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_4 >= 2:
                     if subgrouping_options_4[0] == "tags":
                         with col_2_row_11:
-                            subgroup_4_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_4)
-                            subgroup_4_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_4)
+                            subgroup_4_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_4[1:])
+                            subgroup_4_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_4[1:])
                     else:
                         with col_2_row_11:
                             subgroup_4_1 = st.slider(label="Subgroup 1:", step=0.1,
@@ -939,7 +939,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_4 >= 3:
                     if subgrouping_options_4[0] == "tags":
                         with col_2_row_11:
-                            subgroup_4_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_4)
+                            subgroup_4_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_4[1:])
                     else:
                         with col_2_row_11:
                             subgroup_4_3 = st.slider(label="Subgroup 3:", step=0.1,
@@ -949,7 +949,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_4 >= 4:
                     if subgrouping_options_4[0] == "tags":
                         with col_2_row_11:
-                            subgroup_4_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_4)
+                            subgroup_4_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_4[1:])
                     else:
                         with col_2_row_11:
                             subgroup_4_4 = st.slider(label="Subgroup 4:", step=0.1,
@@ -959,7 +959,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_4 >= 5:
                     if subgrouping_options_4[0] == "tags":
                         with col_2_row_11:
-                            subgroup_4_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_4)
+                            subgroup_4_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_4[1:])
                     else:
                         with col_2_row_11:
                             subgroup_4_5 = st.slider(label="Subgroup 5:", step=0.1,
@@ -1036,8 +1036,8 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_5 >= 2:
                     if subgrouping_options_5[0] == "tags":
                         with col_2_row_13:
-                            subgroup_5_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_5)
-                            subgroup_5_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_5)
+                            subgroup_5_1 = st.multiselect(label="Subgroup 1:", options=subgrouping_options_5[1:])
+                            subgroup_5_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_5[1:])
                     else:
                         with col_2_row_13:
                             subgroup_5_1 = st.slider(label="Subgroup 1:", step=0.1,
@@ -1051,7 +1051,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_5 >= 3:
                     if subgrouping_options_5[0] == "tags":
                         with col_2_row_13:
-                            subgroup_5_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_5)
+                            subgroup_5_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_5[1:])
                     else:
                         with col_2_row_13:
                             subgroup_5_3 = st.slider(label="Subgroup 3:", step=0.1,
@@ -1061,7 +1061,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_5 >= 4:
                     if subgrouping_options_5[0] == "tags":
                         with col_2_row_13:
-                            subgroup_5_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_5)
+                            subgroup_5_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_5[1:])
                     else:
                         with col_2_row_13:
                             subgroup_5_4 = st.slider(label="Subgroup 4:", step=0.1,
@@ -1071,7 +1071,7 @@ def variable_number_slider_handler(change):
                 if subgroup_slider_5 >= 5:
                     if subgrouping_options_5[0] == "tags":
                         with col_2_row_13:
-                            subgroup_5_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_5)
+                            subgroup_5_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_5[1:])
                     else:
                         with col_2_row_13:
                             subgroup_5_5 = st.slider(label="Subgroup 5:", step=0.1,
@@ -1361,7 +1361,7 @@ def pass_KM_parameters():
                     logger.info(f"[Subgrouping 3rd step] Subgrouping labels applied to variable {repeat+1}---> {log_string}")
 
                     # Remove empty rows on the new column only when there are no more subgroups left
-                    if subgroup_dict[f"subgroup_{j+1}"] is None:
+                    if j == 5 or subgroup_dict[f"subgroup_{j+1}"] is None:
                         KM_data_working = KM_data_working[pd.notnull(KM_data_working["TextSubgroup"])]
                         # Delete the original column and rename the new one with the original name
                         KM_data_working.drop(subgroup_dict["column"], axis=1, inplace=True)
@@ -1379,7 +1379,7 @@ def pass_KM_parameters():
                     logger.info(f"[Subgrouping 3rd step] Subgrouping labels applied to variable {repeat+1}---> Subgroup {j}: {value}")
                     
                     # Filter out rows without any of the selected tags only when we have no more subgroups left
-                    if subgroup_dict[f"subgroup_{j+1}"] is None:
+                    if j == 5 or subgroup_dict[f"subgroup_{j+1}"] is None:
                         KM_data_working = KM_data_working[KM_data_working[subgroup_dict["column"]].isin(all_tags_selected)]
                     
         # Log the updated df

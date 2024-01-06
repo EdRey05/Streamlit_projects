@@ -5,8 +5,10 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V09 (Jan 01, 2024): Minor improvement to tag widgets and fixed a bug on the 5th subgroup for any
-                    variable. The logging has not been revised yet. 
+    V10 (Jan 06, 2024): Major improvements to -Using variable(s)- option. Now the content of each
+                        selected column/variable is analyzed better in base of 9 observed scenarios
+                        to display the most appropriate plot and subgrouping widgets. The logging
+                        has not been revised yet. 
 '''
 ###################################################################################################
 
@@ -573,12 +575,49 @@ def variable_number_slider_handler(change):
                 # Prepare the label options to make subgroups by either tags or float ranges
                 if dataset_dropdown_1 == "clinical":
                     if df_clinical[variable_dropdown_1].dtype == "object": 
+                        # Scenario 1 - a real text column
                         subgrouping_options_1 = ["tags"] + list(df_clinical[variable_dropdown_1].unique())
                     else:
-                        subgrouping_options_1 = ["ranges"] + df_clinical[variable_dropdown_1].agg(["min", "max"]).tolist()
+                        # Display correct widgets according to the plot made (see 8 scenarios considered)
+                        # We need to check the number of unique values and type of data in the column
+                        nonobject_data_check_1 = df_clinical[variable_dropdown_1].dropna().copy()
+                        n_unique_1 = nonobject_data_check_1.nunique()
+                        is_float_dtype_1 = pd.api.types.is_float_dtype(nonobject_data_check_1)
+
+                        # Scenarios 2, 3, 6, 7: >10 unique values, int or float with or without NaN
+                        if n_unique_1 > 10:
+                            # If all values are already integers, no conversion is needed (scenario 2)
+                            if all(isinstance(value, int) for value in nonobject_data_check_1):
+                                step_1 = 1
+                            # Check for integers that were transformed to floats due to NaNs (scenario 6)
+                            elif is_float_dtype_1 and all(value.is_integer() for value in nonobject_data_check_1):
+                                # Convert the elements back to integers and the column dtype to integer too
+                                nonobject_data_check_1 = nonobject_data_check_1.apply(lambda x: int(x) if np.isfinite(x) else x)
+                                nonobject_data_check_1 = nonobject_data_check_1.astype('Int64')
+                                step_1 = 1
+                            # If all values were truly floats, no conversion is needed (scenario 3 and 7)
+                            else:
+                                step_1 = 0.1
+                            
+                            # Generate the info for the range widget for both int or float
+                            subgrouping_options_1 = ["ranges"] + [step_1] + nonobject_data_check_1.agg(["min", "max"]).tolist()
+                        # Scenarios 4, 5, 8, 9: <10 unique values, int or float with or without NaN
+                        elif n_unique_1 < 10:
+                            # Transform column dtype to object and values to strings
+                            nonobject_data_check_1 = nonobject_data_check_1.astype('object')
+                            nonobject_data_check_1 = nonobject_data_check_1.apply(lambda x: str(x))
+                            
+                            # Check if all non-NaN values end with '.0' (they were likely integers-Scenario 8)
+                            if all(str(x).endswith('.0') for x in nonobject_data_check_1):
+                                # Remove '.0' from these values
+                                nonobject_data_check_1 = nonobject_data_check_1.apply(lambda x: str(x)[:-2] if str(x).endswith('.0') else str(x))
+                            
+                            # Generate the info for the multiselect widget for both int or float
+                            subgrouping_options_1 = ["tags"] + list(nonobject_data_check_1.unique())
+                # RNA data is always float numbers
                 elif dataset_dropdown_1 == "RNA":
-                    subgrouping_options_1 = ["ranges"] + df_RNA[variable_dropdown_1].agg(["min", "max"]).tolist()
-                
+                    subgrouping_options_1 = ["ranges"] + [0.1] + df_RNA[variable_dropdown_1].agg(["min", "max"]).tolist()
+            
             # When the slider is changed, show additional widgets to specify the subgroups
             if subgroup_slider_1 == 1:
                 with col_2_row_5:
@@ -592,50 +631,51 @@ def variable_number_slider_handler(change):
                             subgroup_1_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_1[1:])
                     else:
                         with col_2_row_5:
-                            subgroup_1_1 = st.slider(label="Subgroup 1:", step=0.1,
-                                                    min_value=subgrouping_options_1[1],
-                                                    max_value=subgrouping_options_1[2],
-                                                    value=(subgrouping_options_1[1], subgrouping_options_1[2]))
-                            subgroup_1_2 = st.slider(label="Subgroup 2:", step=0.1,
-                                                    min_value=subgrouping_options_1[1],
-                                                    max_value=subgrouping_options_1[2],
-                                                    value=(subgrouping_options_1[1], subgrouping_options_1[2]))
+                            subgroup_1_1 = st.slider(label="Subgroup 1:", step=subgrouping_options_1[1],
+                                                    min_value=subgrouping_options_1[2],
+                                                    max_value=subgrouping_options_1[3],
+                                                    value=(subgrouping_options_1[2], subgrouping_options_1[3]))
+                            subgroup_1_2 = st.slider(label="Subgroup 2:", step=subgrouping_options_1[1],
+                                                    min_value=subgrouping_options_1[2],
+                                                    max_value=subgrouping_options_1[3],
+                                                    value=(subgrouping_options_1[2], subgrouping_options_1[3]))
                 if subgroup_slider_1 >= 3:
                     if subgrouping_options_1[0] == "tags":
                         with col_2_row_5:
                             subgroup_1_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_1[1:])
                     else:
                         with col_2_row_5:
-                            subgroup_1_3 = st.slider(label="Subgroup 3:", step=0.1,
-                                                    min_value=subgrouping_options_1[1],
-                                                    max_value=subgrouping_options_1[2],
-                                                    value=(subgrouping_options_1[1], subgrouping_options_1[2]))
+                            subgroup_1_3 = st.slider(label="Subgroup 3:", step=subgrouping_options_1[1],
+                                                    min_value=subgrouping_options_1[2],
+                                                    max_value=subgrouping_options_1[3],
+                                                    value=(subgrouping_options_1[2], subgrouping_options_1[3]))
                 if subgroup_slider_1 >= 4:
                     if subgrouping_options_1[0] == "tags":
                         with col_2_row_5:
                             subgroup_1_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_1[1:])
                     else:
                         with col_2_row_5:
-                            subgroup_1_4 = st.slider(label="Subgroup 4:", step=0.1,
-                                                    min_value=subgrouping_options_1[1],
-                                                    max_value=subgrouping_options_1[2],
-                                                    value=(subgrouping_options_1[1], subgrouping_options_1[2]))
+                            subgroup_1_4 = st.slider(label="Subgroup 4:", step=subgrouping_options_1[1],
+                                                    min_value=subgrouping_options_1[2],
+                                                    max_value=subgrouping_options_1[3],
+                                                    value=(subgrouping_options_1[2], subgrouping_options_1[3]))
                 if subgroup_slider_1 >= 5:
                     if subgrouping_options_1[0] == "tags":
                         with col_2_row_5:
                             subgroup_1_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_1[1:])
                     else:
                         with col_2_row_5:
-                            subgroup_1_5 = st.slider(label="Subgroup 5:", step=0.1,
-                                                    min_value=subgrouping_options_1[1],
-                                                    max_value=subgrouping_options_1[2],
-                                                    value=(subgrouping_options_1[1], subgrouping_options_1[2]))
+                            subgroup_1_5 = st.slider(label="Subgroup 5:", step=subgrouping_options_1[1],
+                                                    min_value=subgrouping_options_1[2],
+                                                    max_value=subgrouping_options_1[3],
+                                                    value=(subgrouping_options_1[2], subgrouping_options_1[3]))
         except NameError:
             pass
     ###############
         
-    ############### Repeat 2
+    #################### Repeat 2
     if change >= 2:
+        # Create a list to store the column containers
         st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_6, col_2_row_6, col_3_row_6 = st.columns([1,1,1])
         col_1_row_7, col_2_row_7 = st.columns([3,1])
@@ -645,7 +685,7 @@ def variable_number_slider_handler(change):
             dataset_dropdown_2 = st.selectbox(label="Select a dataset:", 
                         options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
                         index=0, key="dataset_dropdown_2")
-            
+        
         # When something is selected in the first widget, show two more in the same row
         if dataset_dropdown_2 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
@@ -661,7 +701,7 @@ def variable_number_slider_handler(change):
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_6:
                 variable_dropdown_2 = st_searchbox(search_function=search_genes, default="Click here to select...", 
-                     label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_2rna")
+                                label="Type a gene name here", clear_on_submit=False, key="variable_dropdown_2rna")
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_6:
                 subgroup_slider_2 = st.slider(label="Number of subgroups:",
@@ -685,12 +725,49 @@ def variable_number_slider_handler(change):
                 # Prepare the label options to make subgroups by either tags or float ranges
                 if dataset_dropdown_2 == "clinical":
                     if df_clinical[variable_dropdown_2].dtype == "object": 
+                        # Scenario 1 - a real text column
                         subgrouping_options_2 = ["tags"] + list(df_clinical[variable_dropdown_2].unique())
                     else:
-                        subgrouping_options_2 = ["ranges"] + df_clinical[variable_dropdown_2].agg(["min", "max"]).tolist()
+                        # Display correct widgets according to the plot made (see 8 scenarios considered)
+                        # We need to check the number of unique values and type of data in the column
+                        nonobject_data_check_2 = df_clinical[variable_dropdown_2].dropna().copy()
+                        n_unique_2 = nonobject_data_check_2.nunique()
+                        is_float_dtype_2 = pd.api.types.is_float_dtype(nonobject_data_check_2)
+
+                        # Scenarios 2, 3, 6, 7: >10 unique values, int or float with or without NaN
+                        if n_unique_2 > 10:
+                            # If all values are already integers, no conversion is needed (scenario 2)
+                            if all(isinstance(value, int) for value in nonobject_data_check_2):
+                                step_2 = 1
+                            # Check for integers that were transformed to floats due to NaNs (scenario 6)
+                            elif is_float_dtype_2 and all(value.is_integer() for value in nonobject_data_check_2):
+                                # Convert the elements back to integers and the column dtype to integer too
+                                nonobject_data_check_2 = nonobject_data_check_2.apply(lambda x: int(x) if np.isfinite(x) else x)
+                                nonobject_data_check_2 = nonobject_data_check_2.astype('Int64')
+                                step_2 = 1
+                            # If all values were truly floats, no conversion is needed (scenario 3 and 7)
+                            else:
+                                step_2 = 0.1
+                            
+                            # Generate the info for the range widget for both int or float
+                            subgrouping_options_2 = ["ranges"] + [step_2] + nonobject_data_check_2.agg(["min", "max"]).tolist()
+                        # Scenarios 4, 5, 8, 9: <10 unique values, int or float with or without NaN
+                        elif n_unique_2 < 10:
+                            # Transform column dtype to object and values to strings
+                            nonobject_data_check_2 = nonobject_data_check_2.astype('object')
+                            nonobject_data_check_2 = nonobject_data_check_2.apply(lambda x: str(x))
+                            
+                            # Check if all non-NaN values end with '.0' (they were likely integers-Scenario 8)
+                            if all(str(x).endswith('.0') for x in nonobject_data_check_2):
+                                # Remove '.0' from these values
+                                nonobject_data_check_2 = nonobject_data_check_2.apply(lambda x: str(x)[:-2] if str(x).endswith('.0') else str(x))
+                            
+                            # Generate the info for the multiselect widget for both int or float
+                            subgrouping_options_2 = ["tags"] + list(nonobject_data_check_2.unique())
+                # RNA data is always float numbers
                 elif dataset_dropdown_2 == "RNA":
-                    subgrouping_options_2 = ["ranges"] + df_RNA[variable_dropdown_2].agg(["min", "max"]).tolist()
-                
+                    subgrouping_options_2 = ["ranges"] + [0.1] + df_RNA[variable_dropdown_2].agg(["min", "max"]).tolist()
+            
             # When the slider is changed, show additional widgets to specify the subgroups
             if subgroup_slider_2 == 1:
                 with col_2_row_7:
@@ -704,71 +781,72 @@ def variable_number_slider_handler(change):
                             subgroup_2_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_2[1:])
                     else:
                         with col_2_row_7:
-                            subgroup_2_1 = st.slider(label="Subgroup 1:", step=0.1,
-                                                    min_value=subgrouping_options_2[1],
-                                                    max_value=subgrouping_options_2[2],
-                                                    value=(subgrouping_options_2[1], subgrouping_options_2[2]))
-                            subgroup_2_2 = st.slider(label="Subgroup 2:", step=0.1,
-                                                    min_value=subgrouping_options_2[1],
-                                                    max_value=subgrouping_options_2[2],
-                                                    value=(subgrouping_options_2[1], subgrouping_options_2[2]))
+                            subgroup_2_1 = st.slider(label="Subgroup 1:", step=subgrouping_options_2[1],
+                                                    min_value=subgrouping_options_2[2],
+                                                    max_value=subgrouping_options_2[3],
+                                                    value=(subgrouping_options_2[2], subgrouping_options_2[3]))
+                            subgroup_2_2 = st.slider(label="Subgroup 2:", step=subgrouping_options_2[1],
+                                                    min_value=subgrouping_options_2[2],
+                                                    max_value=subgrouping_options_2[3],
+                                                    value=(subgrouping_options_2[2], subgrouping_options_2[3]))
                 if subgroup_slider_2 >= 3:
                     if subgrouping_options_2[0] == "tags":
                         with col_2_row_7:
                             subgroup_2_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_2[1:])
                     else:
                         with col_2_row_7:
-                            subgroup_2_3 = st.slider(label="Subgroup 3:", step=0.1,
-                                                    min_value=subgrouping_options_2[1],
-                                                    max_value=subgrouping_options_2[2],
-                                                    value=(subgrouping_options_2[1], subgrouping_options_2[2]))
+                            subgroup_2_3 = st.slider(label="Subgroup 3:", step=subgrouping_options_2[1],
+                                                    min_value=subgrouping_options_2[2],
+                                                    max_value=subgrouping_options_2[3],
+                                                    value=(subgrouping_options_2[2], subgrouping_options_2[3]))
                 if subgroup_slider_2 >= 4:
                     if subgrouping_options_2[0] == "tags":
                         with col_2_row_7:
                             subgroup_2_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_2[1:])
                     else:
                         with col_2_row_7:
-                            subgroup_2_4 = st.slider(label="Subgroup 4:", step=0.1,
-                                                    min_value=subgrouping_options_2[1],
-                                                    max_value=subgrouping_options_2[2],
-                                                    value=(subgrouping_options_2[1], subgrouping_options_2[2]))
+                            subgroup_2_4 = st.slider(label="Subgroup 4:", step=subgrouping_options_2[1],
+                                                    min_value=subgrouping_options_2[2],
+                                                    max_value=subgrouping_options_2[3],
+                                                    value=(subgrouping_options_2[2], subgrouping_options_2[3]))
                 if subgroup_slider_2 >= 5:
                     if subgrouping_options_2[0] == "tags":
                         with col_2_row_7:
                             subgroup_2_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_2[1:])
                     else:
                         with col_2_row_7:
-                            subgroup_2_5 = st.slider(label="Subgroup 5:", step=0.1,
-                                                    min_value=subgrouping_options_2[1],
-                                                    max_value=subgrouping_options_2[2],
-                                                    value=(subgrouping_options_2[1], subgrouping_options_2[2]))
+                            subgroup_2_5 = st.slider(label="Subgroup 5:", step=subgrouping_options_2[1],
+                                                    min_value=subgrouping_options_2[2],
+                                                    max_value=subgrouping_options_2[3],
+                                                    value=(subgrouping_options_2[2], subgrouping_options_2[3]))
         except NameError:
             pass
     ###############
 
-    ############### Repeat 3
+    #################### Repeat 3
     if change >= 3:
+        # Create a list to store the column containers
         st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_8, col_2_row_8, col_3_row_8 = st.columns([1,1,1])
         col_1_row_9, col_2_row_9 = st.columns([3,1])
-        
+
         # Show the first widget - dataset dropdown
         with col_1_row_8:
             dataset_dropdown_3 = st.selectbox(label="Select a dataset:", 
-                                              options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
-                                              index=0, key="dataset_dropdown_3")
-            
+                        options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
+                        index=0, key="dataset_dropdown_3")
+        
         # When something is selected in the first widget, show two more in the same row
         if dataset_dropdown_3 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
             with col_2_row_8:
                 variable_dropdown_3 = st.selectbox(label="Select a variable:",
-                                                   options=["Click here to select..."] + list(df_clinical.columns[1:]),
-                                                   index=0, key="variable_dropdown_3")
+                                    options=["Click here to select..."] + list(df_clinical.columns[1:]),
+                                    index=0, key="variable_dropdown_3")
             # And a slider to select the number of subgroups to make
             with col_3_row_8:
                 subgroup_slider_3 = st.slider(label="Number of subgroups:",
-                                              min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_3") 
+                                min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_3") 
         elif dataset_dropdown_3 == "RNA":
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_8:
@@ -777,15 +855,15 @@ def variable_number_slider_handler(change):
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_8:
                 subgroup_slider_3 = st.slider(label="Number of subgroups:",
-                                              min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_3")
+                                min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_3") 
         
-        # Encapsulate these checks for the two additional widgets as they don"t exist until a dataset is selected
+        # Encapsulate these checks for the two additional widgets as they don't exist until a dataset is selected
         try:
             # When a variable is selected in either dropdown or searchbox, make a bar chart or histogram
             if variable_dropdown_3 != "Click here to select...":
                 # There is a function that creates the appropriate plot, we just need the variable and repeat number
                 variable_figure_3 = variables_selection_handler(variable_dropdown_3, 3)
-
+                
                 # Since we need to apply immediately the 0/1 event tags, handle when they have not been specified
                 with col_1_row_9:
                     if variable_figure_3 is None:
@@ -793,22 +871,42 @@ def variable_number_slider_handler(change):
                         st.stop()
                     else:
                         st.altair_chart(variable_figure_3)
-
+                
                 # Prepare the label options to make subgroups by either tags or float ranges
                 if dataset_dropdown_3 == "clinical":
                     if df_clinical[variable_dropdown_3].dtype == "object": 
                         subgrouping_options_3 = ["tags"] + list(df_clinical[variable_dropdown_3].unique())
                     else:
-                        subgrouping_options_3 = ["ranges"] + df_clinical[variable_dropdown_3].agg(["min", "max"]).tolist()
+                        nonobject_data_check_3 = df_clinical[variable_dropdown_3].dropna().copy()
+                        n_unique_3 = nonobject_data_check_3.nunique()
+                        is_float_dtype_3 = pd.api.types.is_float_dtype(nonobject_data_check_3)
+
+                        if n_unique_3 > 10:
+                            if all(isinstance(value, int) for value in nonobject_data_check_3):
+                                step_3 = 1
+                            elif is_float_dtype_3 and all(value.is_integer() for value in nonobject_data_check_3):
+                                nonobject_data_check_3 = nonobject_data_check_3.apply(lambda x: int(x) if np.isfinite(x) else x)
+                                nonobject_data_check_3 = nonobject_data_check_3.astype('Int64')
+                                step_3 = 1
+                            else:
+                                step_3 = 0.1
+                            
+                            subgrouping_options_3 = ["ranges"] + [step_3] + nonobject_data_check_3.agg(["min", "max"]).tolist()
+                        elif n_unique_3 < 10:
+                            nonobject_data_check_3 = nonobject_data_check_3.astype('object')
+                            nonobject_data_check_3 = nonobject_data_check_3.apply(lambda x: str(x))
+                            
+                            if all(str(x).endswith('.0') for x in nonobject_data_check_3):
+                                nonobject_data_check_3 = nonobject_data_check_3.apply(lambda x: str(x)[:-2] if str(x).endswith('.0') else str(x))
+                            
+                            subgrouping_options_3 = ["tags"] + list(nonobject_data_check_3.unique())
                 elif dataset_dropdown_3 == "RNA":
-                    subgrouping_options_3 = ["ranges"] + df_RNA[variable_dropdown_3].agg(["min", "max"]).tolist()
-                
-            # When the slider is changed, show additional widgets to specify the subgroups
+                    subgrouping_options_3 = ["ranges"] + [0.1] + df_RNA[variable_dropdown_3].agg(["min", "max"]).tolist()
+            
             if subgroup_slider_3 == 1:
                 with col_2_row_9:
                     st.warning("For 1 group select -None-")
             else:
-                # Show widgets to make 2 to 5 subgroups (either based on tags or number ranges)
                 if subgroup_slider_3 >= 2:
                     if subgrouping_options_3[0] == "tags":
                         with col_2_row_9:
@@ -816,71 +914,72 @@ def variable_number_slider_handler(change):
                             subgroup_3_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_3[1:])
                     else:
                         with col_2_row_9:
-                            subgroup_3_1 = st.slider(label="Subgroup 1:", step=0.1,
-                                                    min_value=subgrouping_options_3[1],
-                                                    max_value=subgrouping_options_3[2],
-                                                    value=(subgrouping_options_3[1], subgrouping_options_3[2]))
-                            subgroup_3_2 = st.slider(label="Subgroup 2:", step=0.1,
-                                                    min_value=subgrouping_options_3[1],
-                                                    max_value=subgrouping_options_3[2],
-                                                    value=(subgrouping_options_3[1], subgrouping_options_3[2]))
-                if subgroup_slider_3 >= 3:
-                    if subgrouping_options_3[0] == "tags":
-                        with col_2_row_9:
-                            subgroup_3_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_3[1:])
-                    else:
-                        with col_2_row_9:
-                            subgroup_3_3 = st.slider(label="Subgroup 3:", step=0.1,
-                                                    min_value=subgrouping_options_3[1],
-                                                    max_value=subgrouping_options_3[2],
-                                                    value=(subgrouping_options_3[1], subgrouping_options_3[2]))
+                            subgroup_3_1 = st.slider(label="Subgroup 1:", step=subgrouping_options_3[1],
+                                                    min_value=subgrouping_options_3[2],
+                                                    max_value=subgrouping_options_3[3],
+                                                    value=(subgrouping_options_3[2], subgrouping_options_3[3]))
+                            subgroup_3_2 = st.slider(label="Subgroup 2:", step=subgrouping_options_3[1],
+                                                    min_value=subgrouping_options_3[2],
+                                                    max_value=subgrouping_options_3[3],
+                                                    value=(subgrouping_options_3[2], subgrouping_options_3[3]))
+            if subgroup_slider_3 >= 3:
+                if subgrouping_options_3[0] == "tags":
+                    with col_2_row_9:
+                        subgroup_3_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_3[1:])
+                else:
+                    with col_2_row_9:
+                        subgroup_3_3 = st.slider(label="Subgroup 3:", step=subgrouping_options_3[1],
+                                                min_value=subgrouping_options_3[2],
+                                                max_value=subgrouping_options_3[3],
+                                                value=(subgrouping_options_3[2], subgrouping_options_3[3]))
                 if subgroup_slider_3 >= 4:
                     if subgrouping_options_3[0] == "tags":
                         with col_2_row_9:
                             subgroup_3_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_3[1:])
                     else:
                         with col_2_row_9:
-                            subgroup_3_4 = st.slider(label="Subgroup 4:", step=0.1,
-                                                    min_value=subgrouping_options_3[1],
-                                                    max_value=subgrouping_options_3[2],
-                                                    value=(subgrouping_options_3[1], subgrouping_options_3[2]))
+                            subgroup_3_4 = st.slider(label="Subgroup 4:", step=subgrouping_options_3[1],
+                                                    min_value=subgrouping_options_3[2],
+                                                    max_value=subgrouping_options_3[3],
+                                                    value=(subgrouping_options_3[2], subgrouping_options_3[3]))
                 if subgroup_slider_3 >= 5:
                     if subgrouping_options_3[0] == "tags":
                         with col_2_row_9:
                             subgroup_3_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_3[1:])
                     else:
                         with col_2_row_9:
-                            subgroup_3_5 = st.slider(label="Subgroup 5:", step=0.1,
-                                                    min_value=subgrouping_options_3[1],
-                                                    max_value=subgrouping_options_3[2],
-                                                    value=(subgrouping_options_3[1], subgrouping_options_3[2]))
+                            subgroup_3_5 = st.slider(label="Subgroup 5:", step=subgrouping_options_3[1],
+                                                    min_value=subgrouping_options_3[2],
+                                                    max_value=subgrouping_options_3[3],
+                                                    value=(subgrouping_options_3[2], subgrouping_options_3[3]))
         except NameError:
             pass
     ###############
 
-    ############### Repeat 4
+    #################### Repeat 4
     if change >= 4:
+        # Create a list to store the column containers
         st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_10, col_2_row_10, col_3_row_10 = st.columns([1,1,1])
         col_1_row_11, col_2_row_11 = st.columns([3,1])
-        
+
         # Show the first widget - dataset dropdown
         with col_1_row_10:
             dataset_dropdown_4 = st.selectbox(label="Select a dataset:", 
-                                              options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
-                                              index=0, key="dataset_dropdown_4")
-            
+                        options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
+                        index=0, key="dataset_dropdown_4")
+        
         # When something is selected in the first widget, show two more in the same row
         if dataset_dropdown_4 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
             with col_2_row_10:
                 variable_dropdown_4 = st.selectbox(label="Select a variable:",
-                                                   options=["Click here to select..."] + list(df_clinical.columns[1:]),
-                                                   index=0, key="variable_dropdown_4")
+                                    options=["Click here to select..."] + list(df_clinical.columns[1:]),
+                                    index=0, key="variable_dropdown_4")
             # And a slider to select the number of subgroups to make
             with col_3_row_10:
                 subgroup_slider_4 = st.slider(label="Number of subgroups:",
-                                              min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_4") 
+                                min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_4") 
         elif dataset_dropdown_4 == "RNA":
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_10:
@@ -889,15 +988,15 @@ def variable_number_slider_handler(change):
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_10:
                 subgroup_slider_4 = st.slider(label="Number of subgroups:",
-                                              min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_4")
-
-        # Encapsulate these checks for the two additional widgets as they don"t exist until a dataset is selected
+                                min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_4") 
+        
+        # Encapsulate these checks for the two additional widgets as they don't exist until a dataset is selected
         try:
             # When a variable is selected in either dropdown or searchbox, make a bar chart or histogram
             if variable_dropdown_4 != "Click here to select...":
                 # There is a function that creates the appropriate plot, we just need the variable and repeat number
                 variable_figure_4 = variables_selection_handler(variable_dropdown_4, 4)
-
+                
                 # Since we need to apply immediately the 0/1 event tags, handle when they have not been specified
                 with col_1_row_11:
                     if variable_figure_4 is None:
@@ -905,22 +1004,42 @@ def variable_number_slider_handler(change):
                         st.stop()
                     else:
                         st.altair_chart(variable_figure_4)
-
+                
                 # Prepare the label options to make subgroups by either tags or float ranges
                 if dataset_dropdown_4 == "clinical":
                     if df_clinical[variable_dropdown_4].dtype == "object": 
                         subgrouping_options_4 = ["tags"] + list(df_clinical[variable_dropdown_4].unique())
                     else:
-                        subgrouping_options_4 = ["ranges"] + df_clinical[variable_dropdown_4].agg(["min", "max"]).tolist()
+                        nonobject_data_check_4 = df_clinical[variable_dropdown_4].dropna().copy()
+                        n_unique_4 = nonobject_data_check_4.nunique()
+                        is_float_dtype_4 = pd.api.types.is_float_dtype(nonobject_data_check_4)
+
+                        if n_unique_4 > 10:
+                            if all(isinstance(value, int) for value in nonobject_data_check_4):
+                                step_4 = 1
+                            elif is_float_dtype_4 and all(value.is_integer() for value in nonobject_data_check_4):
+                                nonobject_data_check_4 = nonobject_data_check_4.apply(lambda x: int(x) if np.isfinite(x) else x)
+                                nonobject_data_check_4 = nonobject_data_check_4.astype('Int64')
+                                step_4 = 1
+                            else:
+                                step_4 = 0.1
+                            
+                            subgrouping_options_4 = ["ranges"] + [step_4] + nonobject_data_check_4.agg(["min", "max"]).tolist()
+                        elif n_unique_4 < 10:
+                            nonobject_data_check_4 = nonobject_data_check_4.astype('object')
+                            nonobject_data_check_4 = nonobject_data_check_4.apply(lambda x: str(x))
+                            
+                            if all(str(x).endswith('.0') for x in nonobject_data_check_4):
+                                nonobject_data_check_4 = nonobject_data_check_4.apply(lambda x: str(x)[:-2] if str(x).endswith('.0') else str(x))
+                            
+                            subgrouping_options_4 = ["tags"] + list(nonobject_data_check_4.unique())
                 elif dataset_dropdown_4 == "RNA":
-                    subgrouping_options_4 = ["ranges"] + df_RNA[variable_dropdown_4].agg(["min", "max"]).tolist()
-                
-            # When the slider is changed, show additional widgets to specify the subgroups
+                    subgrouping_options_4 = ["ranges"] + [0.1] + df_RNA[variable_dropdown_4].agg(["min", "max"]).tolist()
+            
             if subgroup_slider_4 == 1:
                 with col_2_row_11:
                     st.warning("For 1 group select -None-")
             else:
-                # Show widgets to make 2 to 5 subgroups (either based on tags or number ranges)
                 if subgroup_slider_4 >= 2:
                     if subgrouping_options_4[0] == "tags":
                         with col_2_row_11:
@@ -928,71 +1047,72 @@ def variable_number_slider_handler(change):
                             subgroup_4_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_4[1:])
                     else:
                         with col_2_row_11:
-                            subgroup_4_1 = st.slider(label="Subgroup 1:", step=0.1,
-                                                    min_value=subgrouping_options_4[1],
-                                                    max_value=subgrouping_options_4[2],
-                                                    value=(subgrouping_options_4[1], subgrouping_options_4[2]))
-                            subgroup_4_2 = st.slider(label="Subgroup 2:", step=0.1,
-                                                    min_value=subgrouping_options_4[1],
-                                                    max_value=subgrouping_options_4[2],
-                                                    value=(subgrouping_options_4[1], subgrouping_options_4[2]))
-                if subgroup_slider_4 >= 3:
-                    if subgrouping_options_4[0] == "tags":
-                        with col_2_row_11:
-                            subgroup_4_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_4[1:])
-                    else:
-                        with col_2_row_11:
-                            subgroup_4_3 = st.slider(label="Subgroup 3:", step=0.1,
-                                                    min_value=subgrouping_options_4[1],
-                                                    max_value=subgrouping_options_4[2],
-                                                    value=(subgrouping_options_4[1], subgrouping_options_4[2]))
+                            subgroup_4_1 = st.slider(label="Subgroup 1:", step=subgrouping_options_4[1],
+                                                    min_value=subgrouping_options_4[2],
+                                                    max_value=subgrouping_options_4[3],
+                                                    value=(subgrouping_options_4[2], subgrouping_options_4[3]))
+                            subgroup_4_2 = st.slider(label="Subgroup 2:", step=subgrouping_options_4[1],
+                                                    min_value=subgrouping_options_4[2],
+                                                    max_value=subgrouping_options_4[3],
+                                                    value=(subgrouping_options_4[2], subgrouping_options_4[3]))
+            if subgroup_slider_4 >= 3:
+                if subgrouping_options_4[0] == "tags":
+                    with col_2_row_11:
+                        subgroup_4_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_4[1:])
+                else:
+                    with col_2_row_11:
+                        subgroup_4_3 = st.slider(label="Subgroup 3:", step=subgrouping_options_4[1],
+                                                min_value=subgrouping_options_4[2],
+                                                max_value=subgrouping_options_4[3],
+                                                value=(subgrouping_options_4[2], subgrouping_options_4[3]))
                 if subgroup_slider_4 >= 4:
                     if subgrouping_options_4[0] == "tags":
                         with col_2_row_11:
                             subgroup_4_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_4[1:])
                     else:
                         with col_2_row_11:
-                            subgroup_4_4 = st.slider(label="Subgroup 4:", step=0.1,
-                                                    min_value=subgrouping_options_4[1],
-                                                    max_value=subgrouping_options_4[2],
-                                                    value=(subgrouping_options_4[1], subgrouping_options_4[2]))
+                            subgroup_4_4 = st.slider(label="Subgroup 4:", step=subgrouping_options_4[1],
+                                                    min_value=subgrouping_options_4[2],
+                                                    max_value=subgrouping_options_4[3],
+                                                    value=(subgrouping_options_4[2], subgrouping_options_4[3]))
                 if subgroup_slider_4 >= 5:
                     if subgrouping_options_4[0] == "tags":
                         with col_2_row_11:
                             subgroup_4_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_4[1:])
                     else:
                         with col_2_row_11:
-                            subgroup_4_5 = st.slider(label="Subgroup 5:", step=0.1,
-                                                    min_value=subgrouping_options_4[1],
-                                                    max_value=subgrouping_options_4[2],
-                                                    value=(subgrouping_options_4[1], subgrouping_options_4[2]))
+                            subgroup_4_5 = st.slider(label="Subgroup 5:", step=subgrouping_options_4[1],
+                                                    min_value=subgrouping_options_4[2],
+                                                    max_value=subgrouping_options_4[3],
+                                                    value=(subgrouping_options_4[2], subgrouping_options_4[3]))
         except NameError:
             pass
     ###############
 
-    ############### Repeat 5
+    #################### Repeat 5
     if change >= 5:
+        # Create a list to store the column containers
         st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px; border-width: 5px;">', unsafe_allow_html=True)
         col_1_row_12, col_2_row_12, col_3_row_12 = st.columns([1,1,1])
         col_1_row_13, col_2_row_13 = st.columns([3,1])
-        
+
         # Show the first widget - dataset dropdown
         with col_1_row_12:
             dataset_dropdown_5 = st.selectbox(label="Select a dataset:", 
-                                              options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
-                                              index=0, key="dataset_dropdown_5")
-            
+                        options=["Click here to select...", "clinical"] + (["RNA"] if df_RNA is not None else []),
+                        index=0, key="dataset_dropdown_5")
+        
         # When something is selected in the first widget, show two more in the same row
         if dataset_dropdown_5 == "clinical":
             # A dropdown widget if the dataset selected is the clinical one
             with col_2_row_12:
                 variable_dropdown_5 = st.selectbox(label="Select a variable:",
-                                                   options=["Click here to select..."] + list(df_clinical.columns[1:]),
-                                                   index=0, key="variable_dropdown_5")
+                                    options=["Click here to select..."] + list(df_clinical.columns[1:]),
+                                    index=0, key="variable_dropdown_5")
             # And a slider to select the number of subgroups to make
             with col_3_row_12:
                 subgroup_slider_5 = st.slider(label="Number of subgroups:",
-                                              min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_5") 
+                                min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_5") 
         elif dataset_dropdown_5 == "RNA":
             # A searchbox widget if the dataset selected is the RNA one
             with col_2_row_12:
@@ -1001,15 +1121,15 @@ def variable_number_slider_handler(change):
             # The same slider as above, but putting it inside the if-else prevents it from showing up immediately 
             with col_3_row_12:
                 subgroup_slider_5 = st.slider(label="Number of subgroups:",
-                                              min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_5")
-
-        # Encapsulate these checks for the two additional widgets as they don"t exist until a dataset is selected
+                                min_value=1, max_value=5, value=1, step=1, key="subgroup_slider_5") 
+        
+        # Encapsulate these checks for the two additional widgets as they don't exist until a dataset is selected
         try:
             # When a variable is selected in either dropdown or searchbox, make a bar chart or histogram
             if variable_dropdown_5 != "Click here to select...":
                 # There is a function that creates the appropriate plot, we just need the variable and repeat number
                 variable_figure_5 = variables_selection_handler(variable_dropdown_5, 5)
-
+                
                 # Since we need to apply immediately the 0/1 event tags, handle when they have not been specified
                 with col_1_row_13:
                     if variable_figure_5 is None:
@@ -1017,22 +1137,42 @@ def variable_number_slider_handler(change):
                         st.stop()
                     else:
                         st.altair_chart(variable_figure_5)
-
+                
                 # Prepare the label options to make subgroups by either tags or float ranges
                 if dataset_dropdown_5 == "clinical":
                     if df_clinical[variable_dropdown_5].dtype == "object": 
                         subgrouping_options_5 = ["tags"] + list(df_clinical[variable_dropdown_5].unique())
                     else:
-                        subgrouping_options_5 = ["ranges"] + df_clinical[variable_dropdown_5].agg(["min", "max"]).tolist()
+                        nonobject_data_check_5 = df_clinical[variable_dropdown_5].dropna().copy()
+                        n_unique_5 = nonobject_data_check_5.nunique()
+                        is_float_dtype_5 = pd.api.types.is_float_dtype(nonobject_data_check_5)
+
+                        if n_unique_5 > 10:
+                            if all(isinstance(value, int) for value in nonobject_data_check_5):
+                                step_5 = 1
+                            elif is_float_dtype_5 and all(value.is_integer() for value in nonobject_data_check_5):
+                                nonobject_data_check_5 = nonobject_data_check_5.apply(lambda x: int(x) if np.isfinite(x) else x)
+                                nonobject_data_check_5 = nonobject_data_check_5.astype('Int64')
+                                step_5 = 1
+                            else:
+                                step_5 = 0.1
+                            
+                            subgrouping_options_5 = ["ranges"] + [step_5] + nonobject_data_check_5.agg(["min", "max"]).tolist()
+                        elif n_unique_5 < 10:
+                            nonobject_data_check_5 = nonobject_data_check_5.astype('object')
+                            nonobject_data_check_5 = nonobject_data_check_5.apply(lambda x: str(x))
+                            
+                            if all(str(x).endswith('.0') for x in nonobject_data_check_5):
+                                nonobject_data_check_5 = nonobject_data_check_5.apply(lambda x: str(x)[:-2] if str(x).endswith('.0') else str(x))
+                            
+                            subgrouping_options_5 = ["tags"] + list(nonobject_data_check_5.unique())
                 elif dataset_dropdown_5 == "RNA":
-                    subgrouping_options_5 = ["ranges"] + df_RNA[variable_dropdown_5].agg(["min", "max"]).tolist()
-                
-            # When the slider is changed, show additional widgets to specify the subgroups
+                    subgrouping_options_5 = ["ranges"] + [0.1] + df_RNA[variable_dropdown_5].agg(["min", "max"]).tolist()
+            
             if subgroup_slider_5 == 1:
                 with col_2_row_13:
                     st.warning("For 1 group select -None-")
             else:
-                # Show widgets to make 2 to 5 subgroups (either based on tags or number ranges)
                 if subgroup_slider_5 >= 2:
                     if subgrouping_options_5[0] == "tags":
                         with col_2_row_13:
@@ -1040,44 +1180,44 @@ def variable_number_slider_handler(change):
                             subgroup_5_2 = st.multiselect(label="Subgroup 2:", options=subgrouping_options_5[1:])
                     else:
                         with col_2_row_13:
-                            subgroup_5_1 = st.slider(label="Subgroup 1:", step=0.1,
-                                                    min_value=subgrouping_options_5[1],
-                                                    max_value=subgrouping_options_5[2],
-                                                    value=(subgrouping_options_5[1], subgrouping_options_5[2]))
-                            subgroup_5_2 = st.slider(label="Subgroup 2:", step=0.1,
-                                                    min_value=subgrouping_options_5[1],
-                                                    max_value=subgrouping_options_5[2],
-                                                    value=(subgrouping_options_5[1], subgrouping_options_5[2]))
-                if subgroup_slider_5 >= 3:
-                    if subgrouping_options_5[0] == "tags":
-                        with col_2_row_13:
-                            subgroup_5_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_5[1:])
-                    else:
-                        with col_2_row_13:
-                            subgroup_5_3 = st.slider(label="Subgroup 3:", step=0.1,
-                                                    min_value=subgrouping_options_5[1],
-                                                    max_value=subgrouping_options_5[2],
-                                                    value=(subgrouping_options_5[1], subgrouping_options_5[2]))
+                            subgroup_5_1 = st.slider(label="Subgroup 1:", step=subgrouping_options_5[1],
+                                                    min_value=subgrouping_options_5[2],
+                                                    max_value=subgrouping_options_5[3],
+                                                    value=(subgrouping_options_5[2], subgrouping_options_5[3]))
+                            subgroup_5_2 = st.slider(label="Subgroup 2:", step=subgrouping_options_5[1],
+                                                    min_value=subgrouping_options_5[2],
+                                                    max_value=subgrouping_options_5[3],
+                                                    value=(subgrouping_options_5[2], subgrouping_options_5[3]))
+            if subgroup_slider_5 >= 3:
+                if subgrouping_options_5[0] == "tags":
+                    with col_2_row_13:
+                        subgroup_5_3 = st.multiselect(label="Subgroup 3:", options=subgrouping_options_5[1:])
+                else:
+                    with col_2_row_13:
+                        subgroup_5_3 = st.slider(label="Subgroup 3:", step=subgrouping_options_5[1],
+                                                min_value=subgrouping_options_5[2],
+                                                max_value=subgrouping_options_5[3],
+                                                value=(subgrouping_options_5[2], subgrouping_options_5[3]))
                 if subgroup_slider_5 >= 4:
                     if subgrouping_options_5[0] == "tags":
                         with col_2_row_13:
                             subgroup_5_4 = st.multiselect(label="Subgroup 4:", options=subgrouping_options_5[1:])
                     else:
                         with col_2_row_13:
-                            subgroup_5_4 = st.slider(label="Subgroup 4:", step=0.1,
-                                                    min_value=subgrouping_options_5[1],
-                                                    max_value=subgrouping_options_5[2],
-                                                    value=(subgrouping_options_5[1], subgrouping_options_5[2]))
+                            subgroup_5_4 = st.slider(label="Subgroup 4:", step=subgrouping_options_5[1],
+                                                    min_value=subgrouping_options_5[2],
+                                                    max_value=subgrouping_options_5[3],
+                                                    value=(subgrouping_options_5[2], subgrouping_options_5[3]))
                 if subgroup_slider_5 >= 5:
                     if subgrouping_options_5[0] == "tags":
                         with col_2_row_13:
                             subgroup_5_5 = st.multiselect(label="Subgroup 5:", options=subgrouping_options_5[1:])
                     else:
                         with col_2_row_13:
-                            subgroup_5_5 = st.slider(label="Subgroup 5:", step=0.1,
-                                                    min_value=subgrouping_options_5[1],
-                                                    max_value=subgrouping_options_5[2],
-                                                    value=(subgrouping_options_5[1], subgrouping_options_5[2]))
+                            subgroup_5_5 = st.slider(label="Subgroup 5:", step=subgrouping_options_5[1],
+                                                    min_value=subgrouping_options_5[2],
+                                                    max_value=subgrouping_options_5[3],
+                                                    value=(subgrouping_options_5[2], subgrouping_options_5[3]))
         except NameError:
             pass
     ###############
@@ -1182,12 +1322,60 @@ def variables_selection_handler(change, repeat):
     logger.info(f"[Subgrouping 2nd step] Data types of KM_data_1var columns: \n {KM_data_1var.dtypes.to_string()} \n\n")
 
     ##### Step 03
-    # Make and display a bar chart for text columns showing the counts for unique values
+
+    # Check the dtype of the column in case some transformation is required
     if column_data[repeat - 1].dtype == "object":
+        # Scenario 1 - a real text column, no transformation is required to plot nor in the original KM_data_1var
         alt_data3 = column_data[repeat - 1].value_counts(dropna=False).reset_index()
         alt_data3.columns = [change, "count"]
         alt_data3[change] = alt_data3[change].fillna("NaN")
+    else:
+        # To treat plot and subset int or float columns, we need to do several checks first (scenario 2-9)
+        # If we have more than 10 unique  (int or float), leave it as it is to make a histogram
+        # If we have less than 10 unique values (int or float), transform the to object to make a barchart
+        # A truly integer column is transformed to float if there are NaNs, so we transform it back if all are .0
+        # A truly float column stays as float if there are NaNs
+        
+        column_data[repeat - 1] = column_data[repeat - 1].dropna()
+        n_unique = column_data[repeat - 1].nunique()
+        is_float_dtype = pd.api.types.is_float_dtype(column_data[repeat - 1])                        
+                            
+        # Scenarios 2, 3, 6, 7: >10 unique values, int or float with or without NaN
+        if n_unique > 10:
+            
+            # Check for integers that were transformed to floats due to NaNs (scenario 6)
+            if is_float_dtype and all(value.is_integer() for value in column_data[repeat - 1]):
+                # Convert the elements back to integers and the column dtype to integer too
+                column_data[repeat - 1] = column_data[repeat - 1].apply(lambda x: int(x) if np.isfinite(x) else x)
+                column_data[repeat - 1] = column_data[repeat - 1].astype(pd.Int64Dtype().type)
+                alt_data3 = pd.DataFrame({change: column_data[repeat - 1]})
+            else:
+                # If all values are already integers, no conversion is needed (scenario 2)
+                # If all values were truly floats, no conversion is needed (scenario 3 and 7)
+                alt_data3 = pd.DataFrame({change: column_data[repeat - 1]})
+            
+            # Update the original column to we keep the transformations when we pass it to the KM analysis
+            KM_data_1var[change] = column_data[repeat - 1]
+        # Scenarios 4, 5, 8, 9: <10 unique values
+        elif n_unique < 10:
+            # Transform column dtype to object and all the elements of the column to strings
+            column_data[repeat - 1] = column_data[repeat - 1].astype('object')
+            column_data[repeat - 1] = column_data[repeat - 1].apply(lambda x: str(x))
 
+            # Check if all non-NaN values end with '.0' (they were likely integers-Scenario 8)
+            if all(str(x).endswith('.0') for x in column_data[repeat - 1]):
+                # Remove '.0' from these values
+                column_data[repeat - 1] = column_data[repeat - 1].apply(lambda x: str(x)[:-2] if str(x).endswith('.0') else str(x))
+            
+            # Adapt the column data to the format required for the altair plot
+            alt_data3 = pd.DataFrame({change: column_data[repeat - 1].unique(), "count": column_data[repeat - 1].value_counts()}).reset_index(drop=True)
+
+            # Update the original column to we keep the transformations when we pass it to the KM analysis
+            KM_data_1var[change] = column_data[repeat - 1]
+
+    # Check the type of plot to make based on alt_data3
+    if alt_data3[change].dtype == "object":
+        # Make a bar chart for text columns showing the counts for unique values
         chart3 = alt.Chart(alt_data3).mark_bar().encode(
             alt.X(change, type="nominal", axis=alt.Axis(labelAngle=-75)),
             alt.Y("count", title="Patients"),
@@ -1196,8 +1384,7 @@ def variables_selection_handler(change, repeat):
             ).configure_axis(labelColor="#3386BD"
             ).configure_legend(disable=True)
     else:
-        # Make and display a histogram of frequencies for numerical columns
-        alt_data3 = pd.DataFrame({change : column_data[repeat - 1]})
+        # Make a histogram of frequencies for numerical columns
         chart3 = alt.Chart(alt_data3).mark_bar(color="#1D8348").encode(
                 alt.X(change, type="quantitative", bin=alt.Bin(maxbins=50)),
                 alt.Y("count()", title="Patients"),
@@ -1209,19 +1396,23 @@ def variables_selection_handler(change, repeat):
     if repeat == 1:
         # The first variable gets just passed as it is after the steps above
         KM_data_all = KM_data_1var.copy()
-        st.session_state["KM_data_all"] = KM_data_all
     else:
         KM_data_all = st.session_state.get("KM_data_all")
+        # We remove the extra time+event columns as we only want to merge the 4th column based on the first
+        KM_data_1var = KM_data_1var[["PATIENT_ID", change]]
+
         # Check if the column is already in KM_data_all
-        if str(repeat + 2) in KM_data_all.columns:
-            # Replace the values in the existing column
-            KM_data_all.iloc[:, str(repeat + 2)] = KM_data_1var[change].copy()
+        if change in KM_data_all.columns:
+            # Remove the column
+            KM_data_all.drop(change, axis=1, inplace=True)
+            # Merge the dfs (gets rid of rows with NaN is any of the added columns)
+            KM_data_all = KM_data_all.merge(KM_data_1var, how="left", on="PATIENT_ID")
         else:
-            # Create a new column and assign the values
-            KM_data_all[change] = KM_data_1var[change].copy()
+            # Merge the 4th column of KM_data_1var (gets rid of rows with NaN is any of the added columns)
+            KM_data_all = KM_data_all.merge(KM_data_1var, how="left", on="PATIENT_ID")
     
-        # Rename the column to the desired name
-        KM_data_all.rename(columns={str(repeat + 2): change}, inplace=True)
+    # Finally, update the state variable
+    st.session_state["KM_data_all"] = KM_data_all.copy()
 
     # Log the KM_data_all as we add/replace variables/columns of interest 
     logger.info(f"[Subgrouping 2nd step] Updated KM_data_all with columns of interest: \n {KM_data_all.iloc[:15, :10].to_string()} \n")
@@ -1235,7 +1426,6 @@ def pass_KM_parameters():
     
     # Get the required variables from the session state
     df_clinical = st.session_state.get("df_clinical")
-    df_RNA = st.session_state.get("df_RNA")
     time_to_event_selection = st.session_state.get("time_to_event_selection")
     event_observation_selection = st.session_state.get("event_observation_selection")
     event_0 = st.session_state.get("event_0")
@@ -1354,10 +1544,14 @@ def pass_KM_parameters():
                     KM_data_working.loc[subgroup_rows, "TextSubgroup"] = key
                     
                     # Add the correct label to the dictionary
-                    correct_group_labels[repeat][key] = f"{value[0]:.2f} to {value[1]:.2f}"
+                    if isinstance(value[0], int) and isinstance(value[1], int):
+                        correct_group_labels[repeat][key] = f"{value[0]} to {value[1]}"
+                        log_string = f"Subgroup {j}: {value[0]} to {value[1]}"
+                    else:
+                        correct_group_labels[repeat][key] = f"{value[0]:.2f} to {value[1]:.2f}"
+                        log_string = f"Subgroup {j}: {value[0]:.2f} to {value[1]:.2f}"
 
                     # Log the ranges corresponding to each subgroup
-                    log_string = f"Subgroup {j}: {value[0]:.2f} to {value[1]:.2f}"
                     logger.info(f"[Subgrouping 3rd step] Subgrouping labels applied to variable {repeat+1}---> {log_string}")
 
                     # Remove empty rows on the new column only when there are no more subgroups left

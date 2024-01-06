@@ -1,3 +1,13 @@
+# This dataset was created with GPT-4. Contains the columns "PATIENT_ID", "OS_MONTHS", "OS_STATUS" which where filled with random data, and 9 columns "S1"... to "S9" that were filled with these specifications to test different types of values and assigned dtypes when the column is read by pandas into a df: 
+# S1: Randomly assigned values from "Treatment_A" to "Treatment_E".
+# S2: Random integers ranging from 1 to 1000.
+# S3: Random floats between 0.00 and 100.00.
+# S4: Random integers with a limited set of unique values (1 to 5).
+# S5: Random floats with a limited set of unique values (0.0, 0.2, 0.4, 0.6, 0.8, 1.0).
+# S6: Similar to S2 but with some NaN values included.
+# S7: Similar to S3 but with some NaN values included.
+# S8: Similar to S4 but with some NaN values included.
+# S9: Similar to S5 but with some NaN values included.
 PATIENT_ID	OS_MONTHS	OS_STATUS	S1	S2	S3	S4	S5	S6	S7	S8	S9
 P_0001	33.94716771280105	Alive	Treatment_B	554	78.82451304168256	1	1.0	554.0	78.82451304168256	1.0	1.0
 P_0002	29.05501707564917	Dead	Treatment_E	816	61.90504946826114	5	0.6	816.0	61.90504946826114	5.0	0.6

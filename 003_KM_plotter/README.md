@@ -1,4 +1,4 @@
-# Demo of the app 003_KM_plotter V08
+# Demo of the app 003_KM_plotter V10
 
 How to use this app (see video below):
 1. Open the script and run the app with an IDE such as Visual Studio Code or through Github Codespaces (see notes).
@@ -25,4 +25,4 @@ NOTES:
 * If you intend to use a big RNA Seq file (>200mb), it would be best if you download the app and the ".streamlit" folder to run it locally (seems that Codespaces is not obeying my config file). 
 * The app will generate a log file 'MyLog.txt' every time it is used (with lots of information), but feel free to disregard/delete this file as it might be useful for debugging but the logging has not been fully optimized for Streamlit (the app was a Jupyter notebook before).
 
-https://github.com/EdRey05/Streamlit_projects/assets/62916582/0a6e603b-8e94-409c-8fff-1afcdbb176b2
+https://github.com/EdRey05/Streamlit_projects/assets/62916582/144aab3c-15e8-4894-acd9-6acd7d07894e

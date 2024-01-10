@@ -3,93 +3,89 @@
 
 @import "{{ site.theme }}";
 
-//Change background color
-body {
-  background: #94A7AE;
-}
-
-//Make the main area bigger
-.wrapper {
-  width: 950px;
-}
-
-// Thicker horizontal line
-hr {
-  height: 25px;
-}
-
-// Main header bar
-header {
-  background: #64766A; 
-  h1 {
-    color: #F4F2F3; 
+@include large {
+  .page-header {
+    padding: 2rem 6rem; // Reduced the top and bottom padding to 2rem
   }
 }
 
-// Bar for GitHub and Downloads buttons
-#banner {
-  background: #ffbc99; 
-  .button {
-    color: #C0A9BD; 
-    &:hover {
-      background-color: #ffbc99; 
-    }
+@include large {
+  .main-content {
+    padding: 2rem 4rem; 
   }
 }
 
-// Content area
-section {
-  width: 1100px;
-  padding: 20px 20px 20px 20px;
-  background: #f7e7d5;
-  margin-top: 180px;
-  margin-left: 70px;
+// Overriding container width to use more of the viewport width
+.main-content {
+  max-width: 100%;  
+  margin: auto;
+  kbd {
+    background-color: #e1e1e2;
+  }
+  hr {
+    height: 10px;
+  }
 }
 
-// Navigation left area
-nav {
-  left: 40%;
-}
-
-// Text alignment classes
-.text-center {
-  text-align: center;
-}
-
-.text-justify {
-  text-align: justify;
-}
-
-// Column classes
+// Styles for two-column layout
 .two-columns {
   display: flex;
-  flex-wrap: wrap;
   width: 100%;
 }
 
-.left-column3 {
-  flex-basis: 30%;
-  padding-right: 20px;
+.left-column-35 {
+  flex: 35%;
+  padding-right: 15px; // Adjust spacing as needed
 }
 
-.right-column7 {
-  flex-basis: 70%; 
+.right-column-65 {
+  flex: 65%;
 }
 
-.left-column5 {
-  flex-basis: 50%;
-  padding-right: 10px;
+.left-column-50 {
+  flex: 50%;
+  padding-right: 15px; // Adjust spacing as needed
 }
 
-.right-column5 {
-  flex-basis: 50%; 
+.right-column-50 {
+  flex: 50%;
 }
 
-// Utility classes for text inside sections
-section h2 {
-  @extend .text-center; // This will center all h2 elements within sections
+// Ensure full-width sections are not affected
+details > summary {
+  width: 100%;
 }
 
-section p {
-  @extend .text-justify; // This will justify all paragraphs within sections
+// Responsive adjustments for smaller screens
+@media screen and (max-width: 768px) {
+  .two-columns, .left-column, .right-column {
+    flex-direction: column;
+    flex: 100%;
+  }
+}
+
+// Make the expandable sections work
+details > summary {
+  cursor: pointer;
+  color: #0366d6; /* GitHub's link color for consistency */
+}
+
+details > summary::before {
+  content: '▶▶';
+  padding-right: 8px;
+  transition: transform 0.3s ease;
+}
+
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+// Justify text for elements with the 'justify-text' class
+.justify-text {
+  text-align: justify;
+}
+
+// Center text for elements with the 'center-text' class
+.center-text {
+  text-align: center;
 }

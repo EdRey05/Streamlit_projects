@@ -3,41 +3,97 @@
 
 @import "{{ site.theme }}";
 
+//Change background color
+body {
+  background: #94A7AE;
+}
+
+//Make the main area bigger
+.wrapper {
+  width:950px;
+}
+
+// Thicker horizontal line
+hr {
+  height: 25px;
+}
+
 // Main header bar
 header {
-  background-color: #344649; // Dark Slate Gray
-  h1, p {
-    color: #ffffff; // White color for the text for better readability
+  background: #64766A; 
+  h1 {
+    color: #F4F2F3; 
   }
 }
 
 // Bar for GitHub and Downloads buttons
 #banner {
-  background-color: #ffbc99; // Soft Orange
+  background: #ffbc99; 
   .button {
-    color: #344649; // Dark Slate Gray for the button text
+    color: #C0A9BD; 
     &:hover {
-      background-color: darken(#ffbc99, 10%); // Darken the button on hover for effect
-    }
-  }
-}
-
-// Navigation area
-nav {
-  background-color: #7d8e95; // Slate Gray
-  ul {
-    li {
-      a {
-        color: #ffffff; // White color for links for better readability
-      }
+      background-color: darken(#ffbc99, 10%); 
     }
   }
 }
 
 // Content area
 section {
-  background-color: #fce1c3; // Light Peach
-  color: #344649; // Dark Slate Gray for the text for better readability
+  width: 1100px;
+  padding: 20px 20px 20px 20px;
+  background: #f7e7d5;
+  margin-top: 180px;
+  margin-left: 70px;
 }
 
-// Other potential overrides can go here
+// Navigation left area
+nav {
+
+}
+
+// Text alignment classes
+.text-center {
+  text-align: center;
+}
+
+.text-justify {
+  text-align: justify;
+}
+
+// Column classes
+.one-column {
+  width: 100%;
+}
+
+.two-columns {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.left-column3 {
+  flex-basis: 30%;
+  padding-right: 20px;
+}
+
+.right-column7 {
+  flex-basis: 70%; 
+}
+
+.left-column5 {
+  flex-basis: 50%;
+  padding-right: 10px;
+}
+
+.right-column5 {
+  flex-basis: 50%; 
+}
+
+// Utility classes for text inside sections
+section h2 {
+  @extend .text-center; // This will center all h2 elements within sections
+}
+
+section p {
+  @extend .text-justify; // This will justify all paragraphs within sections
+}

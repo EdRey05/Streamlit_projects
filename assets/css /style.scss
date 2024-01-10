@@ -10,7 +10,95 @@ body {
 
 //Make the main area bigger
 .wrapper {
-  width:950px;
+  width: 950px;
+}
+
+// Thicker horizontal line
+hr {
+  height: 25px;
+}
+
+// Main header bar
+header {
+  background: #64766A; 
+  h1 {
+    color: #F4F2F3; 
+  }
+}
+
+// Bar for GitHub and Downloads buttons
+#banner {
+  background: #ffbc99; 
+  .button {
+    color: #C0A9BD; 
+    &:hover {
+      background-color: #ffbc99; 
+    }
+  }
+}
+
+// Content area
+section {
+  width: 1100px;
+  padding: 20px 20px 20px 20px;
+  background: #f7e7d5;
+  margin-top: 180px;
+  margin-left: 70px;
+}
+
+// Navigation left area
+nav {
+  left: 40%;
+}
+
+// Text alignment classes
+.text-center {
+  text-align: center;
+}
+
+.text-justify {
+  text-align: justify;
+}
+
+// Column classes
+.two-columns {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.left-column3 {
+  flex-basis: 30%;
+  padding-right: 20px;
+}
+
+.right-column7 {
+  flex-basis: 70%; 
+}
+
+.left-column5 {
+  flex-basis: 50%;
+  padding-right: 10px;
+}
+
+.right-column5 {
+  flex-basis: 50%; 
+}
+
+// Utility classes for text inside sections
+---
+---
+
+@import "{{ site.theme }}";
+
+//Change background color
+body {
+  background: #94A7AE;
+}
+
+//Make the main area bigger
+.wrapper {
+  width: 950px;
 }
 
 // Thicker horizontal line
@@ -48,7 +136,7 @@ section {
 
 // Navigation left area
 nav {
-
+  // If there are styles to be added for nav, add them here
 }
 
 // Text alignment classes
@@ -61,10 +149,6 @@ nav {
 }
 
 // Column classes
-.one-column {
-  width: 100%;
-}
-
 .two-columns {
   display: flex;
   flex-wrap: wrap;

@@ -76,20 +76,19 @@
     <div class="two-columns">
         <div class="left-column-35">
             <p><strong> Summary </strong></p>
-            <p class="justify-text"> During my graduate studies, I performed numerous <strong>fluorescence microscopy experiments</strong>, acquiring 
-                images of individual cancer cells <i>in vitro</i>. Typical analyses involved <strong>co-localization</strong> between signals coming
-                from different proteins, or <strong>object/particle detection and counting</strong>. <br><br>
+            <p class="justify-text"> During my graduate studies, I performed <strong>fluorescence microscopy experiments</strong>, acquiring images of 
+                cancer cells <i>in vitro</i>. Typical analysis involved <strong>co-localization</strong> between signals produced by proteins, or 
+                <strong>object/particle counting</strong>. <br><br>
                 For <strong>Proximity Ligation Assay (PLA)</strong> experiments, which evaluate <strong>protein-protein interactions</strong>, I used 
-                a <strong>EVOS M7000 </strong> cell imager (Thermo-Fisher) to automate the acquisition of thousands of images. I also wrote scripts in 
-                <strong>Jython</strong> (Python wrapper for Java) to automate their pre-processing and analysis in the <strong>ImageJ/Fiji</strong> 
-                software. The outputs are a <strong>csv file with the object count for each individual cell</strong> and each <strong>cropped cell image 
-                with its object mask image</strong> (shows colored blobs for particles detected and counted if met the criteria). <br><br>
-                To <strong>validate the outputs</strong> before statistical analysis, I designed a tool to <strong>consolidate all the outputs</strong> 
-                for each experimental condition into a summary Power Point presentation. I automated the creation of slides with a <strong>customized layout
-                </strong> and inserted all relevant information and images using the <strong>python-pptx</strong> library. I created first a tool in the form 
-                of a <strong>Google Colab notebook</strong> and then converted it into a <strong>Streamilt app</strong>. <br><br>
-                This tool helped me visualize outputs for <strong>almost 10,000 images</strong> and easily <strong>compare two quantification 
-                methods, test different pre-processing and object detection parameters, and fully optimize the whole workflow for each experiment</strong>.
+                a <strong>EVOS M7000 </strong> cell imager to automate the acquisition of thousands of images. I wrote scripts in <strong>Jython</strong> 
+                (Python wrapper for Java) to automate image processing and analysis in the <strong>ImageJ/Fiji</strong> software. The outputs are a 
+                <strong>csv file with the object count for each individual cell</strong> and pairs of <strong>fluorescence + object mask images</strong> 
+                (the latter shows particles as colored blobs if met the criteria to be counted). <br><br>
+                I designed a tool to <strong>consolidate all the outputs</strong> for each experimental group into a summary Power Point presentation so 
+                we could validate the parameters using during the workflow. I automated the creation of slides using the <strong>python-pptx</strong> 
+                library, designing a <strong>custom layout</strong> and inserting relevant information. I created first a tool in the form of a 
+                <strong>Google Colab notebook</strong> and then as a <strong>Streamilt app</strong>. This tool helped me visualize outputs for <strong>
+                almost 10,000 images</strong>, easily <strong>compare two quantification methods, and fully optimize the whole workflow</strong>. <br><br>
             </p>
         </div>
         <div class="right-column-65">
@@ -152,19 +151,15 @@
             <p><strong> Summary </strong></p>
             <p class="justify-text"> During my graduate studies, I came across the <strong><a href="https://depmap.org/portal/ccle/">Cancer Cell Line 
                 Encyclopedia</a></strong>, which is a project containing information on <strong>over 1,800 cell models</strong>, including <strong>RNA 
-                Seq gene expression</strong> data. Although my reseach group does not specialize in bioinfomatics, we used the CCLE dataset at times to 
-                cross-validate some observations, potential gene candidates, or to look for cell model options we didn't have in-house. <br><br>
-                I downloaded the 2019 dataset and noticed it was very large (<strong>around 1,800 by 20,000</strong>), and we only used a few cell
-                lines in our analyses. Moreover, we wanted different combinations of these cell lines per file, so I created a basic tool as a 
-                <strong>Google Colab notebook</strong> (<strong><a href="https://user-images.githubusercontent.com/62916582/204422004-47fe5726-d92d-4193-bc6a-ea30b3a93cc1.gif">View tool</a></strong>) 
-                to search and retrieve only the cell lines of interest. <br><br>
-                However, I noticed that the dataset was merged with the <strong>Achilles project</strong> to make the <strong><a href="https://depmap.org/portal/download/all/">DepMap project</a></strong>, 
-                which added few more cell lines and several more datasets from other types of genomics, proteomics, and metabolomics assays. They also 
-                reshaped datasets, reassigned IDs to make all datasets consistent, etc. Once I noticed the new version, I adapted my tool to work for the 
-                new dataset (<strong>at that time, 23Q2</strong>), and generated a similar notebook. <br><br>
-                Finally, when I discovered <strong>Streamlit</strong> the first data app I built attempted to replicate my tool for DepMap. I soon 
-                discovered how easy was to add widgets and interactive plots that would allow not only to extract the data, but also to <strong>automate 
-                basic data exploration and visualization</strong> of the cell lines and gene expression in a very user-friendly manner. <br><br>
+                Seq gene expression</strong> data (<strong>around 20,000 genes</strong>). <br><br>
+                I created a basic tool as a <strong>Google Colab notebook</strong> (<strong><a href="https://user-images.githubusercontent.com/62916582/204422004-47fe5726-d92d-4193-bc6a-ea30b3a93cc1.gif">View tool</a></strong>) to search and retrieve only cell lines of interest (we usually only needed <10). However, years later I noticed that the dataset was 
+                merged with the <strong>Achilles project</strong> to make the <strong><a href="https://depmap.org/portal/download/all/">DepMap project</a></strong>. 
+                This added few more cell lines but several more datasets from diverse genomics, proteomics, and metabolomics assays. They also reshaped 
+                datasets, reassigned IDs to make all datasets consistent, etc. I adapted my tool to work for the new version (<strong>at that time, 
+                23Q2</strong>), and generated a similar notebook. <br><br>
+                Finally, when I discovered <strong>Streamlit</strong> I built a data app to replicate my notebook tool. I realized how easy was to add 
+                widgets and interactive plots that would allow not only to extract the data, but also to <strong>automate basic exploration and 
+                visualization</strong> of the cell lines and gene expression in a very user-friendly manner. <br><br>
             </p>
         </div>
         <div class="right-column-65">
@@ -183,7 +178,7 @@
                                         website was confusing and led to errors as the <strong>datasets change 2-4 times a year</strong>. </li>
                 <li class="justify-text">The notebook tool required the user to have the required files already <strong>stored in a specific Google Drive folder 
                                         </strong> (or to have access to a Google account that had them). </li>
-                <li class="justify-text">The notebook tool was <strong>only able to search based on cell line name<strong>, but sometimes we needed just to explore 
+                <li class="justify-text">The notebook tool was <strong>only able to search based on cell line name</strong>, but sometimes we needed just to explore 
                                         what models are available for some tissues. </li>
                 <li class="justify-text">The notebook tool only provided a <strong>simple view of the search results</strong> showing the cell line name followed 
                                         by tissue, no more information. </li>

@@ -31,39 +31,34 @@
     </p>
     <div class="two-columns">
         <div class="left-column-50">
-                <p class="justify-text"><strong> Solution </strong></p>
-                <p class="justify-text"> I learned how to generate Kaplan-Meier plots using the <code>KaplanMeierFitter</code> module from the <code>lifelines</code>
-                            python library. Then I retrieved the relevant datasets from CBioPortal and created a Jupyter Notebook to pre-process and 
-                            filter the datasets. Once my notebook could do one KM plot, I hard-coded some iterable variables with all the names of the
-                            genes to generate plots for. With this first tool, I produced basic but automated batches of 40-50 plots that allowed us to
-                            quickly discard the gene pairs that did not shown the behaviour we were interested in. This first tool (see GIF-->), 
-                            required only to change the list of names of genes of interest in a code block, and I did minor adjustments to adapt this to
-                            run in Google Colab, allowing lab peers with no coding experience to use it too. <br><br>
-                            Since I gained great interest for this type of analysis, I kept learning on my own for 1-2 years after the small projects 
-                            finished. Then, I found an approach to generalize the data pre-processing and analysis and created a second tool that used                                                     
-                            <code>ipywidgets</code> to interactively get user input to visualize and select the variables and ways to subdivide the dataset 
-                            before plotting the KM curves. This second tool (see GIF-->), was significantly more complex but allowed me to easily 
-                            explore different combinations of variables and subgroups to gain insights about this breast cancer study. Although the 2nd 
-                            tool did not require the user to modify any code blocks, the proper rendering of the widget layout I used would not work in 
-                            Google Colab and thus the user should know how to install and work in Jupyter lab. For that reason and some difficulties with 
-                            widget behavior, I temporarily stopped that project (Version 04). <br><br>
-                            Around a year later, I discovered Streamlit and tried to transform my notebook to a data app. It took me several weeks to adapt 
-                            all my code to <code>streamlit</code> (which has its own widgets), and soon I realized the power of this library. Not only I 
-                            was able to translate all the code of my latest version on Jupyter and make it look nicer, but also, I was able to improve the 
-                            code, add plot interativity with <code>pyplot</code> and <code>altair</code> plots, add plot customization and add few more 
-                            features. <br><br>
-                            Finally, the latest version of the third tool in Streamlit (see first GIF above) is fully interactive and works locally or online 
-                            through a button that directly builds a <strong>Github Codespace</strong> with everything needed to try it out without having 
-                            any coding experience. This tool allowed me to explore different datasets, variables, and generate better plots with accompanying
-                            data to do statistical analysis in my software of choice (even re-plot the curve+CIs).
-                </p>
+                <p><strong> Problem </strong></p>
+                <ul>
+                    <li class="justify-text">We needed to generate around <strong>100 Kaplan-Meier plots</strong> (pairs of <strong>RET-gene</strong>
+                                            expression). </li>
+                    <li class="justify-text">Each plot would require to divide the dataset into <strong>4 groups</strong> to generate <strong>4 survival 
+                                            curves</strong> (expression: <strong>low-low, low-high, high-low, high-high</strong>). </li>
+                    <li class="justify-text">The clinical data (survival times and status) was in a dataset, whereas the RNA Seq expression data was in
+                                            another, so we needed to do some pre-processing to both so we could match the patient IDs. </li>
+                    <li class="justify-text">We needed to screen all the plots generated but keep only the ones where the <strong>low-low curve</strong>
+                                            was higher than the others, and retrieve relevant data such as CIs and time to 50% survival for analysis. </li>
+                    <li class="justify-text">Since each clinical trial reports the data in a different way, we chose the biggest dataset for breast cancer
+                                            first (<strong>METABRIC</strong>), but we needed to generalize as much as possible to reuse the tool for other                                                     clinical trials (breast or other cancer types). </li>
+                </ul>
         </div>
         <div class="right-column-50">
-            <p><strong> First tool (dataset- and gene-specific) </strong></p>
-            <img src="https://user-images.githubusercontent.com/62916582/204424020-bae3613c-bf10-4a3b-9d50-beaf50ca8eee.gif" alt="003_first_pre_tool" />
-            <br><br><br>
-            <p><strong> Second tool (interactive subsetting options) </strong></p>
-            <img src="Images_GIFs_Videos/Preview_003_Jupyter_version.gif" alt="003_second_pre_tool" />
+            <p><strong> Solution </strong></p>
+            <ul> 
+                <li class="justify-text">I learned how to use the <strong>KaplanMeierFitter</strong> module from the <strong>lifelines</strong> python 
+                                        library to generate KM plots. </li>
+                <li class="justify-text">I first generated a <strong>Google Colab notebook</strong> that was dataset-specific to produce batches of 
+                                        <strong>40-50</strong> plots but only subsetting the dataset in 4 groups based on 2 genes each, and required
+                                        manual editing of the code to change the names of the genes of interest (<a href="https://user-images.githubusercontent.com/62916582/204424020-bae3613c-bf10-4a3b-9d50-beaf50ca8eee.gif" target="_blank">View GIF</a>). </li>
+                <li class="justify-text">Then, I found a way to generalize some steps and created a <strong>Jupyter notebook</strong> that used
+                                        <strong>ipywidgets</strong> to interactively get user inputs, allowing dynamically changing the columns
+                                        used to subset the dataset and re-plotting curves (<a href="https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/de82796fe821b96c18ab0709018c02c3b02aba92/Tutorials/Preview_Interactive_KM.gif" target="_blank">View GIF</a>). </li>
+                <li class="justify-text">Finally, I discovered <strong>Streamlit</strong> and adapted my interactive notebook to a data app (GIF above)
+                                        that used a similar code approach but with more features to enhance interactivy and improve outputs. </li>
+            </ul>
         </div>
     </div>
     <p><strong> Read the instructions and watch another demo of the Streamlit app here: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/003_KM_plotter">Demo_KM_plotter</a></strong></p>

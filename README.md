@@ -14,7 +14,7 @@
                 <strong>Streamlit app (see GIF --></strong>) to automate the creation of these plots with <strong>Python</strong>. <br><br>
                 At the end of the project, we were able to identify <strong>less than 10 gene pairs</strong> showing the behavior of interest. That 
                 information was used in combination with other data from different techniques (<i>in silico</i> and <i>in vitro</i>) to prioritize 
-                further studies evaluating the effect of inhibtion of those genes in cancer cell models. 
+                further studies evaluating the effect of inhibtion of those genes in cancer cell models. <br><br>
             </p>
         </div>
         <div class="right-column-65">
@@ -23,7 +23,6 @@
             <p class="center-text">To see in full screen, right click on image and select "Open in new tab" </p>
         </div>
     </div>
-    </p>
     <div class="two-columns">
         <div class="left-column-50">
                 <p><strong> Problem </strong></p>
@@ -53,11 +52,11 @@
                 <li class="justify-text">I first generated a <strong>Google Colab notebook</strong> that was dataset-specific to produce batches of 
                                         <strong>40-50</strong> plots. This <strong>exclusively makes 4 groups</strong> from the original dataset based 
                                         on the expression of RET and one other gene, which required to manually write in the code all 40-50 names of the
-                                        other gene (<a href="https://user-images.githubusercontent.com/62916582/204424020-bae3613c-bf10-4a3b-9d50-beaf50ca8eee.gif" target="_blank">View tool</a>). </li>
+                                        other gene (<strong><a href="https://user-images.githubusercontent.com/62916582/204424020-bae3613c-bf10-4a3b-9d50-beaf50ca8eee.gif" target="_blank">View tool</a></strong>). </li>
                 <li class="justify-text">Then, I found a way to generalize some steps and created a <strong>Jupyter notebook</strong> that used
                                         <strong>ipywidgets</strong> to <strong>interactively get user inputs</strong>, allowing dynamic selection of 
                                         <strong>any measured variable</strong> to divide the dataset into <strong>2 or more groups</strong> and 
-                                        re-plotting curves easily (<a href="https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/de82796fe821b96c18ab0709018c02c3b02aba92/Tutorials/Preview_Interactive_KM.gif" target="_blank">View tool</a>). </li>
+                                        re-plotting curves easily (<strong><a href="https://github.com/EdRey05/Resources_for_Mulligan_Lab/blob/de82796fe821b96c18ab0709018c02c3b02aba92/Tutorials/Preview_Interactive_KM.gif" target="_blank">View tool</a></strong>). </li>
                 <li class="justify-text">Finally, I discovered <strong>Streamlit</strong> and adapted my interactive notebook to a <strong>data app</strong> 
                                         (GIF above) that used a similar approach but has <strong>more interactivy, improved outputs and better user                                                                                                         experience</strong>. </li>
                 <li class="justify-text">Although the app works well for several datasets, I noticed <strong>high variability in the formatting of clinical
@@ -65,7 +64,7 @@
             </ul>
         </div>
     </div>
-    <p><strong> <u>NOTE:</u> I am not planning on deploying my app to any server, it runs locally and I also set it up in Github Codespaces to share with others (see last section).</strong></p>
+    <p><strong> <u>NOTE:</u> I am not planning on deploying my app to a hosted server (for now), it runs locally or in Github Codespaces (see last section).</strong></p>
     <p><strong> Read the instructions and watch another demo of the Streamlit app here: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/003_KM_plotter">Demo_KM_plotter</a></strong></p>
 </details>
 
@@ -130,7 +129,7 @@
                                         to the root directory for that experimental group to find the pairs of images to insert. </li>
                 <li class="justify-text">A big iterable is generated with names, counts, and image locations which are analyzed to separate in groups of
                                         up to 20 for a single slide (see app info).  </li>
-                <li class="justify-text">I implemented this approach first in a <strong>Google Colab notebook</strong> (<a href="https://user-images.githubusercontent.com/62916582/204415085-cc39bb7c-904e-487c-a16d-0d894c1e3249.gif" target="_blank">View tool</a>) and then created a <strong>Streamlit app</strong> (GIF above). The app has the <strong>same functionality 
+                <li class="justify-text">I implemented this approach first in a <strong>Google Colab notebook</strong> (<strong><a href="https://user-images.githubusercontent.com/62916582/204415085-cc39bb7c-904e-487c-a16d-0d894c1e3249.gif" target="_blank">View tool</a></strong>) and then created a <strong>Streamlit app</strong> (GIF above). The app has the <strong>same functionality 
                                         </strong> but <strong>better user experience</strong>, especially to read additional info on the input/output and the 
                                         design of the slides. </li>
                 <li class="justify-text">The app allows <strong>quick and easy automation</strong>, as the user only needs to upload a <strong>zip file with as 
@@ -139,19 +138,33 @@
             </ul>
         </div>
     </div>
-    <p><strong> <u>NOTE:</u> I am not planning on deploying my app to any server, it runs locally and I also set it up in Github Codespaces to share with others (see last section).</strong></p>
+    <p><strong> <u>NOTE:</u> I am not planning on deploying my app to a hosted server (for now), it runs locally or in Github Codespaces (see last section).</strong></p>
     <p><strong> Read the instructions and watch another demo of the Streamlit app here: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/002_Automated_PPTX_PLA">Demo_PPTX_PLA</a></strong></p>
 </details>
 
 <hr>
 
-<h2> 001 - Extract RNA expression data from CCLE/DepMap </h2>
+<h2> 001 - Interactive extraction of RNA Seq data from CCLE/DepMap </h2>
 
 <details><summary markdown="span"> Expand this to read more...</summary>
     <div class="two-columns">
         <div class="left-column-35">
             <p><strong> Summary </strong></p>
-            <p class="justify-text"> Some summary here. 
+            <p class="justify-text"> During my graduate studies, I came across the <strong><a href="https://depmap.org/portal/ccle/">Cancer Cell Line 
+                Encyclopedia</a></strong>, which is a project containing information on <strong>over 1,800 cell models</strong>, including <strong>RNA 
+                Seq gene expression</strong> data. Although my reseach group does not specialize in bioinfomatics, we used the CCLE dataset at times to 
+                cross-validate some observations, potential gene candidates, or to look for cell model options we didn't have in-house. <br><br>
+                I downloaded the 2019 dataset and noticed it was very large (<strong>around 1,800 by 20,000</strong>), and we only used a few cell
+                lines in our analyses. Moreover, we wanted different combinations of these cell lines per file, so I created a basic tool as a 
+                <strong>Google Colab notebook</strong> (<strong><a href="https://user-images.githubusercontent.com/62916582/204422004-47fe5726-d92d-4193-bc6a-ea30b3a93cc1.gif">View tool</a></strong>) 
+                to search and retrieve only the cell lines of interest. <br><br>
+                However, I noticed that the dataset was merged with the <strong>Achilles project</strong> to make the <strong><a href="https://depmap.org/portal/download/all/">DepMap project</a></strong>, 
+                which added few more cell lines and several more datasets from other types of genomics, proteomics, and metabolomics assays. They also 
+                reshaped datasets, reassigned IDs to make all datasets consistent, etc. Once I noticed the new version, I adapted my tool to work for the 
+                new dataset (<strong>at that time, 23Q2</strong>), and generated a similar notebook. <br><br>
+                Finally, when I discovered <strong>Streamlit</strong> the first data app I built attempted to replicate my tool for DepMap. I soon 
+                discovered how easy was to add widgets and interactive plots that would allow not only to extract the data, but also to <strong>automate 
+                basic data exploration and visualization</strong> of the cell lines and gene expression in a very user-friendly manner. <br><br>
             </p>
         </div>
         <div class="right-column-65">
@@ -164,27 +177,39 @@
         <div class="left-column-50">
             <p class="justify-text"><strong> Problem </strong></p>
             <ul> 
-                <li class="justify-text">A. </li>
-                <li class="justify-text">B. </li>
-                <li class="justify-text">C. </li>
-                <li class="justify-text">D. </li>
-                <li class="justify-text">E. </li>
-                <li class="justify-text">F. </li>
+                <li class="justify-text">The RNA Seq dataset is very large and it no longer has cell line names, as they were changed to Achilles IDs which are
+                                        encoded in another file. </li>
+                <li class="justify-text">We needed to pre-process both datasets before mapping the IDs, but asking the user to get the required files from the
+                                        website was confusing and led to errors as the <strong>datasets change 2-4 times a year</strong>. </li>
+                <li class="justify-text">The notebook tool required the user to have the required files already <strong>stored in a specific Google Drive folder 
+                                        </strong> (or to have access to a Google account that had them). </li>
+                <li class="justify-text">The notebook tool was <strong>only able to search based on cell line name<strong>, but sometimes we needed just to explore 
+                                        what models are available for some tissues. </li>
+                <li class="justify-text">The notebook tool only provided a <strong>simple view of the search results</strong> showing the cell line name followed 
+                                        by tissue, no more information. </li>
+                <li class="justify-text">While the notebook tool provided some degree of automation, it was not easy to de-select cell lines and <strong>only gave 
+                                        the raw data for the user to plot or analyze</strong>. </li>
             </ul>
         </div>
         <div class="right-column-50">
             <p class="justify-text"><strong> Solution </strong></p>
             <ul> 
-                <li class="justify-text">A. </li>
-                <li class="justify-text">B. </li>
-                <li class="justify-text">C. </li>
-                <li class="justify-text">D. </li>
-                <li class="justify-text">E. </li>
-                <li class="justify-text">F. </li>
+                <li class="justify-text">I set the Streamlit app to <strong>automatically download the required files</strong> for the current release at the time 
+                                        (<strong>23Q2</strong>). It takes like a minute or two, but the user does not need any Google account, nor to upload anything
+                                        to be able to use the app. </li>
+                <li class="justify-text">The pre-processing is tailored to that specific data release and caches the prepared dataframe to improve efficiency. </li>
+                <li class="justify-text">I <strong>added a second search mode</strong>, so the user can search names of cell lines (or parts of them), and also search
+                                        by tissue type. </li>
+                <li class="justify-text">The app displays more interactive search results, allowing to check boxes of cell lines to keep (instead of intering numbers)
+                                        and I provide the <strong>Achilles ID, clean cell line name, tissue type and cancer type</strong>. </li>
+                <li class="justify-text">The csv output is the same as the notebook tool, however, the app has several widgets to preview the selected data. </li>
+                <li class="justify-text">Although it is not perfect, the preview area <strong>shows the generated dataset</strong> and lets the user easily <strong>type 
+                                        in genes of interest to make a bar chart or a heatmap</strong>. These visualizations are interactive (plotly) and the user can 
+                                        take snapshots if needed. </li>
             </ul>
         </div>
     </div>
-    <p><strong> <u>NOTE:</u> I am not planning on deploying my app to any server, it runs locally and I also set it up in Github Codespaces to share with others (see last section).</strong></p>
+    <p><strong> <u>NOTE:</u> I am not planning on deploying my app to a hosted server (for now), it runs locally or in Github Codespaces (see last section).</strong></p>
     <p><strong> Read the instructions and watch another demo of the Streamlit app here: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/001_RNA_expression_DepMap">Demo_RNA_DepMap</a></strong></p>
 </details>
 
@@ -199,7 +224,7 @@
             <p class="justify-text"> If you have a Github account, you can create a <strong>Github Codespace</strong> with all the requirements to 
                 run my apps. You only have to log into you account, click on the button below, create your Codespace (<strong>we all have 60h of 
                 free usage per month!</strong>), and follow the instructions in this video→. <br><br>
-                ***Note that due to size limits, I did everything quickly but added notes so pause, read and see where I clicked! <br><br></p>
+                ***Due to size limits, I did everything in the video quickly but added notes so pause, read and see where I clicked! <br><br></p>
             <div class="center-text">
                 <a href="https://codespaces.new/EdRey05/Streamlit_projects?quickstart=1" target="_blank">
                     <img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces">

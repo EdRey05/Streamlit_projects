@@ -9,12 +9,6 @@
   }
 }
 
-@include large {
-  .main-content {
-    padding: 2rem 4rem; 
-  }
-}
-
 // Overriding container width to use more of the viewport width
 .main-content {
   max-width: 100%;  
@@ -35,7 +29,7 @@
 
 .left-column-35 {
   flex: 35%;
-  padding-right: 15px; // Adjust spacing as needed
+  padding-right: 35px; // Adjust spacing as needed
 }
 
 .right-column-65 {
@@ -44,11 +38,12 @@
 
 .left-column-50 {
   flex: 50%;
-  padding-right: 15px; // Adjust spacing as needed
+  padding-right: 25px; // Adjust spacing as needed
 }
 
 .right-column-50 {
   flex: 50%;
+  padding-left: 25px;
 }
 
 // Ensure full-width sections are not affected
@@ -58,9 +53,9 @@ details > summary {
 
 // Responsive adjustments for smaller screens
 @media screen and (max-width: 768px) {
-  .two-columns, .left-column, .right-column {
+  .two-columns, .left-column-35, .right-column-65, .left-column-50, .right-column-50 {
     flex-direction: column;
-    flex: 100%;
+    flex-basis: 100%;
   }
 }
 

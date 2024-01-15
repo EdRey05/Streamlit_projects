@@ -225,13 +225,13 @@
                     <img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces">
                 </a>
             </div>
-            <br><br>
+            <br>
             <p class="justify-text"><strong>Download sample files to test the apps:</strong></p>
             <p class="justify-text">(button on the right side, by the pencil)</p>
             <ul>
-                <li class="justify-text">App 001 - <u>Does not require</u>.</li>
-                <li class="justify-text"><strong><a href="https://github.com/EdRey05/Streamlit_projects/blob/main/Test_units/Project%20002/Data_Both.zip">App 002</a><strong> - Rename to "data.zip" first.</li>
-                <li class="justify-text"><strong><a href="https://github.com/EdRey05/Streamlit_projects/blob/main/Test_units/Project%20003/clinical_METABRIC.txt">App 003</a><strong> - Rename to "clinical.txt"                                             first.</li>
+                <li class="justify-text">App 001 - Does not require.</li>
+                <li class="justify-text"><strong><a href="https://github.com/EdRey05/Streamlit_projects/blob/main/Test_units/Project%20002/Data_Both.zip">App 002</a></strong> - Rename to "data.zip" first.</li>
+                <li class="justify-text"><strong><a href="https://github.com/EdRey05/Streamlit_projects/blob/main/Test_units/Project%20003/clinical_METABRIC.txt">App 003</a></strong> - Rename to "clinical.txt"                                             first.</li>
             </ul>
         </div>
         <div class="right-column-65">

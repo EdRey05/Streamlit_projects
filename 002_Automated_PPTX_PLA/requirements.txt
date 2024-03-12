@@ -1,6 +1,0 @@
-
-numpy
-pandas
-streamlit
-streamlit-option-menu
-python-pptx

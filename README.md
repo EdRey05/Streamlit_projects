@@ -94,7 +94,7 @@
         <div class="right-column-65">
             <br><br>
             <img src="Images_GIFs_Videos/Preview_002.gif" alt="Streamlit Projects 002 GIF" />
-            <p class="center-text">To see in full screen, right click on image and select "Open in new tab" </p>
+            <p class="center-text">The app was deployed to the Streamlit Community Cloud, <strong><a href="https://edrey05-st-app-002.streamlit.app/">Click here to check it out!</a></strong></p>
         </div>
     </div>
     <div class="two-columns">
@@ -137,7 +137,6 @@
             </ul>
         </div>
     </div>
-    <p><strong> <u>NOTE:</u> I am not planning on deploying my app to a hosted server (for now), it runs locally or in Github Codespaces (see last section).</strong></p>
     <p><strong> Read the instructions and watch another demo of the Streamlit app here: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/002_Automated_PPTX_PLA">Demo_PPTX_PLA</a></strong></p>
 </details>
 

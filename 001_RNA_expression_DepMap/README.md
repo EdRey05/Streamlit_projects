@@ -1,9 +1,9 @@
 
-# Demo of the app 001_RNA_expression_DepMap V07
+# Demo of the app 001_RNA_expression_DepMap V07 (V08 works the same but gets the newest files instead)
 
 How to use this app:
-1. Open with an IDE such as Visual Studio Code or through Github Codespaces (an icon for that is the main folder Streamlit_projects).
-2. Wait for the app to get the files.
+1. Open the app hosted in the <a href="https://edrey05-st-app-001.streamlit.app/">Streamlit Community Cloud</a>, running the script with an IDE such as Visual Studio Code or through Github Codespaces (an icon for that is the README of the repo Streamlit_projects).
+2. Wait for the app to load and get the files.
 3. Search for cell lines of interest, either by name or explore options available for each tissue type (Tip: Try few characters, not the whole name, and avoid special characters).
 4. When you see a cell line you want, check its box on the top-right widget. If you change your mind uncheck the box before searching more cell lines.
 5. You can go back and fort between the two types of search to select more cell lines. There is no limit on how many/few you choose.

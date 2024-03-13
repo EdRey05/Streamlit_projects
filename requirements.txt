@@ -7,7 +7,7 @@ altair
 
 # Streamlit-related libraries
 streamlit
-streamlit-searchbox
+streamlit-searchbox==0.1.6
 streamlit-option-menu
 streamlit-carousel
 

@@ -5,18 +5,18 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 DepMap release used: 
-    23Q2
+    23Q4
 
 Data source:
     Original Website: https://depmap.org/portal/download/all/
     Note: This website does not provide the direct download links used here. Instead, when clicking 
-          on -View full release details-, it shows some info and references to this Figshare data 
-          repository: https://doi.org/10.6084/m9.figshare.22765112.v2
-    File 1: OmicsExpressionProteinCodingGenesTPMLogp1.csv  (Downloaded as: DepMap_RNASeq_23Q2.csv)
-    File 2: Model.csv  (Downloaded as: DepMap_CellInfo_23Q2.csv)
+        on -View full release details-, it shows some info and references to this Figshare data 
+        repository: https://doi.org/10.25452/figshare.plus.24667905.v2
+    File 1: OmicsExpressionProteinCodingGenesTPMLogp1.csv  (Downloaded as: DepMap_RNASeq_23Q4.csv)
+    File 2: Model.csv  (Downloaded as: DepMap_CellInfo_23Q4.csv)
 
 App version: 
-    V07 (Dec 05, 2023): Minor design/layout improvements.
+    V08 (Mar 12, 2024): Updated to latest data release.
 
 '''
 ###################################################################################################
@@ -43,15 +43,15 @@ def get_files():
     with st.status("Loading...", expanded=False) as status:
 
         # Defined file names to be used in this script
-        rna_file = "DepMap_RNASeq_23Q2.csv"
-        cell_info_file = "DepMap_CellInfo_23Q2.csv"
+        rna_file = "DepMap_RNASeq_23Q4.csv"
+        cell_info_file = "DepMap_CellInfo_23Q4.csv"
 
         # Check if files exist in the working directory, otherwise download tem
         if not (os.path.isfile(rna_file) and os.path.isfile(cell_info_file)):
             
             status.update(label="Downloading files...")
-            directory1 = "https://figshare.com/ndownloader/files/40449128"
-            directory2 = "https://figshare.com/ndownloader/files/40448834"
+            directory1 = "https://plus.figshare.com/ndownloader/files/43347204"
+            directory2 = "https://plus.figshare.com/ndownloader/files/43746708"
             urllib.request.urlretrieve(directory1, rna_file)
             urllib.request.urlretrieve(directory2, cell_info_file)
             status.update(label="Files downloaded!")
@@ -91,7 +91,7 @@ def get_files():
 
         # Since not all the cell lines in the DepMap/Achilles project have RNA Seq data, remove those from both menus
         cell_menu = cell_menu[cell_menu["Cell line"].isin(RNA_expression.columns)]
-        cell_menu_tissues = [""] + list(cell_menu["Tissue"].unique())
+        cell_menu_tissues = [""] + list(cell_menu["Tissue"].dropna().unique())
         cell_menu_tissues.sort()
 
         status.update(label="Ready to begin search!", state="complete", expanded=False)
@@ -106,7 +106,7 @@ st.set_page_config(
     page_title="Tool 001 - App by Eduardo",
     page_icon=":bar_chart:",
     layout="wide",
-     menu_items={
+    menu_items={
         'Get Help': "https://github.com/EdRey05/Streamlit_projects/tree/main/001_RNA_expression_DepMap",
         'Report a bug': "mailto:eduardo_reyes09@hotmail.com"})
 
@@ -116,9 +116,9 @@ if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
     message = st.markdown('''
         <div style='background-color: #0E6655; padding: 10px; border-radius: 5px; text-align: center; width: 75%; margin: auto;'>
             <p style='font-size: 20px; font-weight: bold;'>THE FILES ARE BEING PREPARED... The app will launch shortly</p>
-            <p>This app was tailored for the RNA Seq dataset from the DepMap portal, release 23Q2.</p>
+            <p>This app was tailored for the RNA Seq dataset from the DepMap portal, release 23Q4.</p>
             <p>The file used was OmicsExpressionProteinCodingGenesTPMLogp1.csv and gives values in log2(TPM+1) units.</p>
-            <p>For more information on the 23Q2 data or newer releases, consult: <a href="https://depmap.org/portal/download/all/" target="_blank">DepMap Portal</a>.</p>
+            <p>For more information on the 23Q4 data or newer releases, consult: <a href="https://depmap.org/portal/download/all/" target="_blank">DepMap Portal</a>.</p>
             <p>Tutorial: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/001_RNA_expression_DepMap" target="_blank">Instructions and Demo</a> </p>
         </div>
         ''', unsafe_allow_html=True)
@@ -148,7 +148,7 @@ if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
 
 # Step 2 - Create app layout
 
-st.title("Retrieve RNASeq data from the DepMap portal (23Q2)")
+st.title("Retrieve RNASeq data from the DepMap portal (23Q4)")
 st.markdown('<hr style="margin-top: +5px; margin-bottom: +5px;">', unsafe_allow_html=True)
 col_1_row_1, col_2_row_1 = st.columns([2, 3], gap="medium")
 st.markdown('<hr style="margin-top: +10px; margin-bottom: +15px;">', unsafe_allow_html=True)
@@ -238,7 +238,7 @@ else:
 with col_1_row_1:
     multiselect_options = [""]+st.session_state["keep_cells_current"]
     st.multiselect(key="keep_cells_final", label="Your selections:", options=multiselect_options, placeholder="", 
-                   default=st.session_state.get("keep_cells_current", []))
+                    default=st.session_state.get("keep_cells_current", []))
 
 ###################################################################################################
 
@@ -339,8 +339,8 @@ def gene_plotter():
                 # Customize the appearance of the heatmap
                 fig = px.imshow(heatmap_data, color_continuous_scale='Cividis')
                 fig.update_layout(xaxis_title="Cell Line" if st.session_state["group_by"] else "Gene", 
-                                  yaxis_title="Gene" if st.session_state["group_by"] else "Cell Line", 
-                                  font=dict(size=24))
+                                yaxis_title="Gene" if st.session_state["group_by"] else "Cell Line", 
+                                font=dict(size=24))
 
             # Display plot
             fig.update_layout(height=400, width=600)
@@ -357,7 +357,7 @@ if not st.session_state["df_to_plot"].empty:
     # Show a searchbox to quickly find genes as the df has thousands of rows (the user can scroll and check boxes too)
     with col_1_row_3:
         st_searchbox(key="selected_gene", search_function=search_genes, default=None, 
-                     label="Type a gene name here or check/uncheck boxes below", clear_on_submit=True,)
+                    label="Type a gene name here or check/uncheck boxes below", clear_on_submit=True,)
         st.markdown('<hr style="margin-top: +10px; margin-bottom: +10px;">', unsafe_allow_html=True)
     
     # When the user selects a gene name, automatically check it to display it at the top of the df

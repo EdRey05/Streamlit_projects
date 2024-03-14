@@ -3,11 +3,11 @@ App made by:
     Eduardo Reyes Alvarez, Ph.D.
 Contact:
     eduardo_reyes09@hotmail.com
+Done: CS, FEZF1, GRK7, MSH5, NOS3, NTHL1, RUVBL1, SELPLG, SEMA3A, TNK2, UBR5
 
 App version: 
-    V10 (Jan 06, 2024): Major improvements to -Using variable(s)- option. Now the content of each
-                        selected column/variable is analyzed better in base of 9 observed scenarios
-                        to display the most appropriate plot and subgrouping widgets. The logging
+    V11 (Mar 14, 2024): Some more exceptions handled. When the clinical and RNA patient IDs do not
+                        match, and when there are NaNs in the time to event column. The logging
                         has not been revised yet. 
 '''
 ###################################################################################################
@@ -42,8 +42,8 @@ st.set_page_config(
 
 # Use these colors for altair charts
 st.session_state["alt_colors"] = ["#76448A", "#B03A2E", "#1E8449", "#1F618D", "#34495E ",  
-                                  "#D68910", "#707B7C", "#E67E22", "#2E86C1", "#E74C3C",
-                                  "#2C3E50", "#F1C40F", "#3498DB", "#D35400", "#27AE60"]
+                                "#D68910", "#707B7C", "#E67E22", "#2E86C1", "#E74C3C",
+                                "#2C3E50", "#F1C40F", "#3498DB", "#D35400", "#27AE60"]
 # Title
 st.title("Interactive Kaplan-Meier plot generator")
 st.markdown('<hr style="margin-top: +2px; margin-bottom: +2px; border-width: 5px;">', unsafe_allow_html=True)
@@ -51,7 +51,7 @@ st.markdown('<hr style="margin-top: +2px; margin-bottom: +2px; border-width: 5px
 # Sidebar - Initial widgets
 with st.sidebar:
     uploaded_files = st.file_uploader(label="Upload a clinical file (and optionally, a RNA file)", 
-                                      type=["txt"], accept_multiple_files=True)
+                                    type=["txt"], accept_multiple_files=True)
     st.markdown('<hr style="margin-top: 1px; margin-bottom: 1px; border-width: 5px;">', unsafe_allow_html=True)
     start_button = st.button(label="Begin", type="secondary")
     restart_button = st.button(label="Start over", type="secondary")
@@ -60,9 +60,9 @@ with st.sidebar:
 
 # Function to setup the logging configuration
 def logging_setup():
-     
-     # Check if logging has already been initialized
-     if "log_created" not in st.session_state:
+    
+    # Check if logging has already been initialized
+    if "log_created" not in st.session_state:
         
         # Configure the logging settings
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -99,7 +99,7 @@ def load_input_files(uploaded_files):
     # Check if one or two files were uploaded
     clinical_file = next((file for file in uploaded_files if file.name == "clinical.txt"), None)
     RNA_file = next((file for file in uploaded_files if file.name == "RNA.txt"), None)
-       
+    
     # Load the files available
     if clinical_file is not None:
         
@@ -208,9 +208,9 @@ def file_preprocessing():
 
     # Save the neccesary data for the next steps in the session state
     st.session_state.update({"df_clinical": df_clinical,
-                             "df_RNA": df_RNA,
-                             "time_to_event_options": time_to_event_options,
-                             "event_observation_options": event_observation_options})
+                            "df_RNA": df_RNA,
+                            "time_to_event_options": time_to_event_options,
+                            "event_observation_options": event_observation_options})
 
     # Also add the options of genes if a RNA file was uploaded
     if df_RNA is not None:
@@ -239,10 +239,10 @@ def widget_preparation():
     
     # Save the columns and containers in the session state
     widget_and_output_areas = [col_1_row_1, col_2_row_1,
-                               col_1_row_2, col_2_row_2,
-                               col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3,
-                               col_1_row_14, col_2_row_14, col_3_row_14,
-                               col_1_row_15, col_2_row_15, col_3_row_15, col_4_row_15]
+                                col_1_row_2, col_2_row_2,
+                                col_1_row_3, col_2_row_3, col_3_row_3, col_4_row_3,
+                                col_1_row_14, col_2_row_14, col_3_row_14,
+                                col_1_row_15, col_2_row_15, col_3_row_15, col_4_row_15]
     st.session_state["widget_and_output_areas"] = widget_and_output_areas
     
     # Time to event widget and callback function
@@ -341,26 +341,31 @@ def time_to_event_dropdown_handler(change):
         time_column = df_clinical[column_name].dropna()
         logger.info(f"The user selected: {column_name}     Widget: time_to_event_dropdown. \n")
         logger.info(f"Original dtype of {column_name}: {df_clinical[column_name].dtype}     Dtype once removing NANs: {time_column.dtype} \n")
-
+        
         # Make histogram of values with altair and handle exceptions
-        if time_column.dtype != "object":
-            alt_data1 = pd.DataFrame({column_name: time_column})
+        if time_column.dtype == "object":
+            # First try to convert the column to a numeric type and if it fails we show a warning
+            try:
+                time_column = pd.to_numeric(time_column, errors="coerce")
+                time_column = time_column.dropna()
+            except:
+                info_str = "Warning: Column type is not numeric."
+                logger.warning("User attention required: The time to event column may not be numerical. \n")
+                
+                with time_to_event_output:
+                    time_to_event_output.empty()
+                    st.warning(info_str)
+                st.stop()
 
-            chart1 = alt.Chart(alt_data1).mark_bar(color="#BA4A00").encode(
+        alt_data1 = pd.DataFrame({column_name: time_column})
+
+        chart1 = alt.Chart(alt_data1).mark_bar(color="#BA4A00").encode(
                 alt.X(column_name, type="quantitative", bin=alt.Bin(step=12)),
                 alt.Y("count()", title="Patients"),
                 ).properties(width=425, height=325
                 ).configure_axis(labelColor="#3386BD")
-            logger.info(f"A histogram was successfully made and displayed for: {column_name} \n")
-        else:
-            # If the column is not numeric, display a warning and stop the app
-            info_str = "Warning: Column type is not numeric."
-            logger.warning("User attention required: The time to event column may not be numerical. \n")
+        logger.info(f"A histogram was successfully made and displayed for: {column_name} \n")
             
-            with time_to_event_output:
-                time_to_event_output.empty()
-                st.warning(info_str)
-            st.stop()
     else:
         # If the column is not in the df, display an error and stop the app
         info_str = "Warning: Column not found in the dataframe."
@@ -496,7 +501,7 @@ def subgroup_buttons_handler(change):
         # Show a slider for 1 to 5 variables (to prevent crazy number of curves)
         with subgroup_buttons_output:
             variable_number_slider = st.slider(label="Number of variables:", 
-                                               min_value=1, max_value=5, step=1, value=1)
+                                                min_value=1, max_value=5, step=1, value=1)
         variable_number_slider_handler(variable_number_slider)   
     else:
         # If the user doesn't want to make subgroups, don't show the slider 
@@ -1317,6 +1322,13 @@ def variables_selection_handler(change, repeat):
         logger.info(f"[Subgrouping 2nd step] The column {change} -{KM_data_1var.dtypes[change]} dtype- from df_RNA was selected to make subgroups. \n")
         column_data[repeat - 1] = KM_data_1var[change].copy()
 
+        # Raise a warning when the patient IDs do not match in the clinical and RNA datasets, causing an empty df
+        if len(KM_data_1var) == 0:
+            logger.warning(f"[Subgrouping 2nd step] The merge of datasets produced an empty dataframe, it is likely that the IDs may not match. \n")
+            st.error("The merge of datasets produced an empty dataframe, check that the patient IDs match in both datasets. \n")
+            st.error("You may need to check the data source or pre-process the datasets to make the IDs consistent before using this app.")
+            st.stop()
+
     # Log the current status of KM_data_1var 
     logger.info(f"[Subgrouping 2nd step] Keep relevant columns of KM_data_1var and only rows with 0/1 event labels: \n {KM_data_1var.iloc[:15, :10].to_string()} \n")
     logger.info(f"[Subgrouping 2nd step] Data types of KM_data_1var columns: \n {KM_data_1var.dtypes.to_string()} \n\n")
@@ -1453,6 +1465,16 @@ def pass_KM_parameters():
         with KM_plot_area:
             KM_plot_area.empty()
             st.warning("First select the values to label as 0 and 1 (No event, event)!!")
+            st.stop()
+    
+    # Check if the time to event column is numerical
+    if df_clinical[time_to_event_selection].dtype == "object":
+        # First try to convert the column to a numeric type and if it fails we show a warning
+        try:
+            df_clinical[time_to_event_selection] = pd.to_numeric(df_clinical[time_to_event_selection], errors="coerce")
+            df_clinical[time_to_event_selection] = df_clinical[time_to_event_selection].dropna()
+        except:
+            st.warning("Warning: Time to Event column is not numeric.")
             st.stop()
 
     # If no subgrouping is required, apply the event tags and pass the data to KM_analysis
@@ -1700,6 +1722,10 @@ def KM_analysis(KM_data, KM_subgroups):
         
         # Create KaplanMeierFitter objects for each subgroup in KM_subgroups
         for label, subset in KM_subgroups.items():
+            
+            # Remove any rows in the subset with NaN values 
+            subset = subset.dropna()
+
             kmf = KaplanMeierFitter()
             kmf.fit(durations=subset[current_time_column], event_observed=subset[current_event_column])
             KMF_object[label] = kmf
@@ -1741,7 +1767,7 @@ def save_KM_results(generate_plot_button):
         # Prepare the data to be processed (single KM object or list of KM objects)
         if isinstance(KM_analysis_output, dict):
             KM_objects_to_process = [{"label": f"KM_Subgroup_{i+1}", "KM_object": KM_object} 
-                                     for i, (label, KM_object) in enumerate(KM_analysis_output.items())]
+                                    for i, (label, KM_object) in enumerate(KM_analysis_output.items())]
             real_labels = [f"KM_Subgroup_{i+1}: {label}" for i, (label, KM_object) in enumerate(KM_analysis_output.items())]
         else:
             # If KM_analysis_output is a single KM object, add it to the list as a dictionary with a general label

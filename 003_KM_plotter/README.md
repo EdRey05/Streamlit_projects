@@ -1,7 +1,7 @@
-# Demo of the app 003_KM_plotter V10
+# Demo of the app 003_KM_plotter V11
 
 How to use this app (see video below):
-1. Open the script and run the app with an IDE such as Visual Studio Code or through Github Codespaces (see notes).
+1. Open the app hosted in the <a href="https://edrey05-st-app-002.streamlit.app/">Streamlit Community Cloud</a>, running the script with an IDE such as Visual Studio Code or through Github Codespaces (an icon for that is the README of the repo Streamlit_projects). Wait for the app to load.
 2. Rename the file containing the clinical data (or a cop of it) to 'clinical.txt', this is a mandatory file containing the times and events for the KM analysis.
 3. Optionally, you can also upload a file containing RNA Seq data of the patients with a name 'RNA.txt'. Be sure a 'PATIENT_ID' column exists in both datasets and that these IDs are the same (not two sets of IDs).
 4. Once the file(s) of interest is/are uploaded, click on 'Begin' and start selecting the parameters of interest.

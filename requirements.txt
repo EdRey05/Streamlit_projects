@@ -7,9 +7,8 @@ altair
 
 # Streamlit-related libraries
 streamlit
-streamlit-searchbox==0.1.6
+streamlit-searchbox
 streamlit-option-menu
-streamlit-carousel
 
 # Libraries for specific features or data processing in my apps
 openpyxl

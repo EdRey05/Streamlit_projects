@@ -16,7 +16,9 @@ Data source:
     File 2: Model.csv  (Downloaded as: DepMap_CellInfo_23Q4.csv)
 
 App version: 
-    V08 (Mar 12, 2024): Updated to latest data release.
+    V09 (Mar 17, 2024): Minor changes, edited two lines to solve the bug of the initial spinner
+                        remaining after initial load, and the key_react issue with version 0.1.7+ 
+                        of the streamlit-searchbox widget.
 
 '''
 ###################################################################################################
@@ -143,6 +145,7 @@ if "cell_menu" not in st.session_state or st.session_state["cell_menu"] is None:
     # Clear the initial message
     message.empty()
     a.empty()
+    st.rerun()
 
 ###################################################################################################
 
@@ -366,7 +369,7 @@ if not st.session_state["df_to_plot"].empty:
         st.session_state["df_to_plot"].loc[st.session_state["df_to_plot"]["Gene"] == selected_gene_result, "Plot?"] = True
         
         # Reset the searchbox so we dont keep the previous result when the df changes
-        st.session_state["selected_gene"] = {"result": None, "search": "", "options_js": []}
+        st.session_state["selected_gene"] = {"result": None, "search": "", "options_js": [], "key_react": "A"}
 
     # Show the results df
     st.session_state["sorted_df"] = st.session_state["df_to_plot"].sort_values(by=["Plot?", "Gene"], ascending=[False, True])

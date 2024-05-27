@@ -11,6 +11,7 @@ streamlit-searchbox
 streamlit-option-menu
 
 # Libraries for specific features or data processing in my apps
+requests
 openpyxl
 python-pptx
 lifelines

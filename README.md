@@ -20,7 +20,16 @@
         <div class="right-column-65">
             <br><br>
             <video width="100%" height="auto" autoplay loop muted><source src="Images_GIFs_Videos/Preview_003.mp4" type="video/mp4"></video> 
-            <p class="center-text">The app was deployed to the Streamlit Community Cloud, <strong><a href="https://edrey05-st-app-003.streamlit.app/">Click here to check it out!</a></strong></p>
+            <p class="center-text">Try the app on → <strong><a href="https://edrey05-st-app-003.streamlit.app/"> Streamlit Cloud </a></strong>  or  
+                <a href="https://codespaces.new/EdRey05/st-app-003?quickstart=1" target="_blank">
+                    <img src="https://github.com/codespaces/badge.svg" alt="GitHub Codespaces">
+                </a>
+            </p>
+            <p class="center-text">
+            <strong><a href="https://github.com/EdRey05/Streamlit_projects/tree/main/003_KM_plotter"> Instructions </a></strong> and 
+            <strong><a href="https://github.com/EdRey05/Streamlit_projects/blob/main/Test_units/Project%20003/clinical_METABRIC.txt"> Sample data </a>
+            </strong> (Rename to "clinical.txt" first)
+            </p>
         </div>
     </div>
     <div class="two-columns">
@@ -64,7 +73,6 @@
             </ul>
         </div>
     </div>
-    <p><strong> Read the instructions and watch another demo of the Streamlit app here: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/003_KM_plotter">Demo_KM_plotter</a></strong></p>
 </details>
 
 <hr>
@@ -93,7 +101,16 @@
         <div class="right-column-65">
             <br><br>
             <img src="Images_GIFs_Videos/Preview_002.gif" alt="Streamlit Projects 002 GIF" />
-            <p class="center-text">The app was deployed to the Streamlit Community Cloud, <strong><a href="https://edrey05-st-app-002.streamlit.app/">Click here to check it out!</a></strong></p>
+            <p class="center-text">Try the app on → <strong><a href="https://edrey05-st-app-002.streamlit.app/"> Streamlit Cloud </a></strong>  or  
+                <a href="https://codespaces.new/EdRey05/st-app-002?quickstart=1" target="_blank">
+                    <img src="https://github.com/codespaces/badge.svg" alt="GitHub Codespaces">
+                </a>
+            </p>
+            <p class="center-text">
+            <strong><a href="https://github.com/EdRey05/Streamlit_projects/tree/main/002_Automated_PPTX_PLA"> Instructions </a></strong> and 
+            <strong><a href="https://github.com/EdRey05/Streamlit_projects/blob/main/Test_units/Project%20002/Data_Both.zip"> Sample data </a>
+            </strong> (Rename to "data.zip" first)
+            </p>
         </div>
     </div>
     <div class="two-columns">
@@ -136,7 +153,6 @@
             </ul>
         </div>
     </div>
-    <p><strong> Read the instructions and watch another demo of the Streamlit app here: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/002_Automated_PPTX_PLA">Demo_PPTX_PLA</a></strong></p>
 </details>
 
 <hr>
@@ -163,7 +179,15 @@
         <div class="right-column-65">
             <br><br>
             <img src="Images_GIFs_Videos/Preview_001.gif" alt="Streamlit Projects 001 GIF" />
-            <p class="center-text">The app was deployed to the Streamlit Community Cloud, <strong><a href="https://edrey05-st-app-001.streamlit.app/">Click here to check it out!</a></strong></p>
+            <p class="center-text">Try the app on → <strong><a href="https://edrey05-st-app-001.streamlit.app/"> Streamlit Cloud </a></strong>  or  
+                <a href="https://codespaces.new/EdRey05/st-app-001?quickstart=1" target="_blank">
+                    <img src="https://github.com/codespaces/badge.svg" alt="GitHub Codespaces">
+                </a>
+            </p>
+            <p class="center-text">
+            <strong><a href="https://github.com/EdRey05/Streamlit_projects/tree/main/001_RNA_expression_DepMap"> Instructions </a></strong>
+            (Does not require sample data)
+            </p>
         </div>
     </div>
     <div class="two-columns">
@@ -200,40 +224,6 @@
                                         in genes of interest to make a bar chart or a heatmap</strong>. These visualizations are interactive (plotly) and the user can 
                                         take snapshots if needed. </li>
             </ul>
-        </div>
-    </div>
-    <p><strong> Read the instructions and watch another demo of the Streamlit app here: <a href="https://github.com/EdRey05/Streamlit_projects/tree/main/001_RNA_expression_DepMap">Demo_RNA_DepMap</a></strong></p>
-</details>
-
-<hr>
-
-<h2> Try out my apps with Github Codespaces! </h2>
-
-<details><summary markdown="span"> Expand this to read more...</summary>
-    <div class="two-columns">
-        <div class="left-column-35">
-            <br>
-            <p class="justify-text"> If you have a Github account, you can create a <strong>Github Codespace</strong> with all the requirements to 
-                run my apps. You only have to log into you account, click on the button below, create your Codespace (<strong>we all have 60h of 
-                free usage per month!</strong>), and follow the instructions in this video→. <br><br>
-                ***Due to size limits, I did everything in the video quickly but added notes so pause, read and see where I clicked! <br><br></p>
-            <div class="center-text">
-                <a href="https://codespaces.new/EdRey05/Streamlit_projects?quickstart=1" target="_blank">
-                    <img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces">
-                </a>
-            </div>
-            <br>
-            <p class="justify-text"><strong>Download sample files to test the apps:</strong></p>
-            <p class="justify-text">(button on the right side, by the pencil)</p>
-            <ul>
-                <li class="justify-text">App 001 - Does not require.</li>
-                <li class="justify-text"><strong><a href="https://github.com/EdRey05/Streamlit_projects/blob/main/Test_units/Project%20002/Data_Both.zip">App 002</a></strong> - Rename to "data.zip" first.</li>
-                <li class="justify-text"><strong><a href="https://github.com/EdRey05/Streamlit_projects/blob/main/Test_units/Project%20003/clinical_METABRIC.txt">App 003</a></strong> - Rename to "clinical.txt"                                             first.</li>
-            </ul>
-        </div>
-        <div class="right-column-65">
-            <br>
-            <video width="100%" height="auto" controls><source src="Images_GIFs_Videos/Demo_Codespaces.mp4" type="video/mp4"></video>
         </div>
     </div>
 </details>

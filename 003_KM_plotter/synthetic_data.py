@@ -5,127 +5,128 @@ Contact:
     eduardo_reyes09@hotmail.com
 
 App version: 
-    V01 (Jan 04, 2024): Fist partial version.
+    V02 (Dec 22, 2024): First fully functional version. Includes the dtype scenarios S1-S9 and some
+                        probabilistic event/time generators.
 
 '''
 ###################################################################################################
-
-# Import required libraries
 
 import numpy as np
 import pandas as pd
 import streamlit as st
 from streamlit_option_menu import option_menu
-import plotly.express as px
-import altair
-
-###################################################################################################
 
 # App configuration and layout
-
 st.set_page_config(
-    page_title="Tool 003 - App by Eduardo",
+    page_title="Synthetic Dataset Generator",
     page_icon=":a:",
-    layout="wide")
+    layout="wide"
+)
 
-st.title("Synthethic dataset generator for Kaplan-Meier plots")
+st.title("Synthetic Dataset Generator for Kaplan-Meier Plots")
 st.markdown('<hr style="margin-top: +2px; margin-bottom: +2px; border-width: 5px;">', unsafe_allow_html=True)
 
 def create_base_df(num_samples):
-
     patient_ids = [f"P_{str(i).zfill(4)}" for i in range(1, num_samples + 1)]
-    base_df = pd.DataFrame({'PATIENT_ID': patient_ids})
+    return pd.DataFrame({'PATIENT_ID': patient_ids})
 
-    return base_df
-
-def time_event_simulation(base_df, time_range, event_types, distribution='exponential', event_rate='random'):
-
+def time_event_simulation(base_df, time_range, event_type_full, distribution, event_rate):
     min_time, max_time = time_range
 
-    # Function to generate survival times based on the chosen distribution
-    def generate_survival_times(size, distribution):
+    event_type_acronyms = {
+        "Overall Survival": "OS",
+        "Recurrence-Free Survival": "RFS",
+        "Progression-Free Survival": "PFS",
+        "Disease-Free Survival": "DFS",
+        "Disease-Specific Survival": "DSS"
+    }
+    event_type = event_type_acronyms[event_type_full]
+
+    def generate_survival_times(size):
         if distribution == 'exponential':
-            return np.random.exponential((max_time - min_time) / 2, size=size)
+            return np.random.exponential(scale=(max_time - min_time) / 2, size=size)
         elif distribution == 'weibull':
-            return np.random.weibull(1.5, size=size) * (max_time - min_time) / 2
-        # More distributions can be added here
-        else:
+            return np.random.weibull(a=1.5, size=size) * (max_time - min_time) / 2
+        else:  # Uniform as fallback
             return np.random.uniform(min_time, max_time, size=size)
 
-    # Function to determine event status based on the event rate scenario
-    def generate_event_status(size, event_rate, survival_times):
-        if event_rate == 'high':
-            # Higher proportion of events (e.g., 70%)
-            event_prob = 0.7
-        elif event_rate == 'low':
-            # Lower proportion of events (e.g., 30%)
-            event_prob = 0.3
-        else:  # 'random'
-            event_prob = 0.5  # Equal probability of event or censoring
-
+    def generate_event_status(size, survival_times):
+        event_prob = {'high': 0.7, 'low': 0.3, 'random': 0.5}.get(event_rate, 0.5)
         is_event = np.random.rand(size) < event_prob
-        return ['Dead' if e and st <= max_time else 'Alive' for e, st in zip(is_event, survival_times)]
+        if event_type == "RFS":
+            return ['Recurred' if e and st <= max_time else 'Not Recurred' for e, st in zip(is_event, survival_times)]
+        elif event_type == "PFS":
+            return ['Progressed' if e and st <= max_time else 'Not Progressed' for e, st in zip(is_event, survival_times)]
+        else:  # Default for OS, DFS, DSS
+            return ['Dead' if e and st <= max_time else 'Alive' for e, st in zip(is_event, survival_times)]
 
-    for event_type in event_types:
-        survival_times = generate_survival_times(len(base_df), distribution)
-        event_status = generate_event_status(len(base_df), event_rate, survival_times)
+    survival_times = generate_survival_times(len(base_df))
+    event_status = generate_event_status(len(base_df), survival_times)
 
-        base_df[f'{event_type}_MONTHS'] = np.clip(survival_times, min_time, max_time)
-        base_df[f'{event_type}_STATUS'] = event_status
-
+    base_df[f'{event_type}_MONTHS'] = np.clip(survival_times, min_time, max_time)
+    base_df[f'{event_type}_STATUS'] = event_status
     return base_df
 
 def dtype_scenarios(df):
-    
-    # Scenario 1: Random value from "Treatment_A" to "Treatment_E"
     df['S1'] = np.random.choice(['Treatment_A', 'Treatment_B', 'Treatment_C', 'Treatment_D', 'Treatment_E'], size=len(df))
-
-    # Scenario 2: Random integer from 1 to 1000
     df['S2'] = np.random.randint(1, 1001, size=len(df))
-
-    # Scenario 3: Random float between 0.00 to 100.00
     df['S3'] = np.random.uniform(0.00, 100.00, size=len(df))
-
-    # Scenario 4: Random integers with few unique values (1, 2, 3, 4, 5)
     df['S4'] = np.random.choice([1, 2, 3, 4, 5], size=len(df))
-
-    # Scenario 5: Random floats with few unique values (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
     df['S5'] = np.random.choice([0.0, 0.2, 0.4, 0.6, 0.8, 1.0], size=len(df))
 
-    # Function to add NaNs to a column
     def add_nans(column, nan_frequency=50):
-        nans = np.random.choice([True, False], size=len(column), p=[1/nan_frequency, 1-1/nan_frequency])
-        column[nans] = np.nan
+        # Introduce a single NaN at a random position
+        nan_index = np.random.randint(0, len(column))
+        column[nan_index] = np.nan
+        
+        # Apply random probability to the rest of the column
+        nans = np.random.choice([True, False], size=len(column) - 1, p=[1/nan_frequency, 1-1/nan_frequency])
+        column[np.delete(np.arange(len(column)), nan_index)[nans]] = np.nan
+        
         return column
 
-    # Scenarios 6, 7, 8, 9: Similar to Scenarios 2, 3, 4, 5 but with some NaNs
     df['S6'] = add_nans(df['S2'].copy())
     df['S7'] = add_nans(df['S3'].copy())
     df['S8'] = add_nans(df['S4'].copy())
     df['S9'] = add_nans(df['S5'].copy())
-
     return df
 
-# Let the user type any number of values in a text box
-num_samples = st.sidebar.number_input("Enter the number of samples", min_value=1, max_value=10000, value=100)
+# Sidebar inputs
+st.sidebar.header("Dataset Configuration")
+num_samples = st.sidebar.number_input("Number of Samples", min_value=1, max_value=10000, value=100)
+time_range = (
+    st.sidebar.slider("Minimum Time (Months)", 0, 100, 0),
+    st.sidebar.slider("Maximum Time (Months)", 1, 100, 60)
+)
+event_type = st.sidebar.selectbox(
+    "Event Type",
+    [
+        "Overall Survival", 
+        "Recurrence-Free Survival", 
+        "Progression-Free Survival", 
+        "Disease-Free Survival", 
+        "Disease-Specific Survival"
+    ]
+)
+distribution = st.sidebar.selectbox("Survival Time Distribution", ["exponential", "weibull", "uniform"], index=0)
+event_rate = st.sidebar.selectbox("Event Rate", ["random", "high", "low"], index=0)
 
-# Create a start button to regulate when a new df is created
-start = st.sidebar.button("Start", type="primary", key="start")
+if "generated_df" not in st.session_state:
+    st.session_state.generated_df = None
 
-if start:
-    df = create_base_df(num_samples)
-    st.dataframe(df)
+if st.sidebar.button("Generate Dataset"):
+    base_df = create_base_df(num_samples)
+    updated_df = time_event_simulation(base_df, time_range, event_type, distribution, event_rate)
+    updated_df = dtype_scenarios(updated_df)
+    st.session_state.generated_df = updated_df
 
-# Example usage:
-time_range = (0, 60)  # 0 to 60 months
-event_types = ['OS']  # List of event types selected by the user
-distribution = 'exponential'  # Distribution for sampling survival times
-event_rate = 'random'  # Event rate scenario
+if st.session_state.generated_df is not None:
+    st.subheader("Generated Dataset")
+    st.dataframe(st.session_state.generated_df, use_container_width=True)
 
-# Adding OS_MONTHS and OS_STATUS columns to the base_df
-updated_df = time_event_simulation(base_df, time_range, event_types, distribution, event_rate)
-updated_df.head()  # Displaying the first few rows of the updated DataFrame
-
-# Adding the scenario columns to the DataFrame
-updated_df = dtype_scenarios(updated_df)
-updated_df.head()  # Displaying the first few rows of the updated DataFrame
+    st.download_button(
+        label="Download Dataset as TXT",
+        data=st.session_state.generated_df.to_csv(index=False, sep='\t'),
+        file_name="synthetic_dataset.txt",
+        mime="text/plain"
+    )

@@ -1,0 +1,6 @@
+numpy==1.26.4
+pandas==2.2.2
+matplotlib==3.9.1
+streamlit==1.40.1
+streamlit-image-coordinates==0.2.0
+Pillow==10.4.0

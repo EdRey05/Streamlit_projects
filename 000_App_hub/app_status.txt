@@ -1,0 +1,47 @@
+[DepMap RNA Expression Visualizer]
+path = 001_RNA_expression_DepMap
+entry = app.py
+icon = 🧬
+status = success
+message = V10 released on May 2024
+args = 
+
+[Automated PPTX Reports For PLA Assays]
+path = 002_Automated_PPTX_PLA
+entry = app.py
+icon = 📊
+status = success
+message = V06 released on Dec 2023
+args = 
+
+[Interactive Kaplan-Meier Plotter]
+path = 003_KM_plotter
+entry = app.py
+icon = 📈
+status = success
+message = V11 released on Mar 2024
+args = 
+
+[Exploratory Data Analysis Tools]
+path = 004_EDA_tools
+entry = app.py
+icon = 🤖
+status = warning
+message = V02 released on Dec 2024 but not all features work as intended.
+args = 
+
+[PDF Tools]
+path = 005_PDF_tools
+entry = app.py
+icon = 📝
+status = success
+message = V01 released on Jul 2024
+args = 
+
+[Integra Assist Plus Worklist]
+path = 006_IntegraAssist_worklist
+entry = app.py
+icon = 🛠️
+status = success
+message = v3.0 released on Aug 2025
+args = 

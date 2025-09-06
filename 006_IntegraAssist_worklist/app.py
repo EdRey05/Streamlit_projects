@@ -3,12 +3,10 @@ Bio Basic Inc. - Canada
 Made by: Eduardo Reyes, Ph.D.
 Contact: ed5reyes@outlook.com
 
-Version: 3.0
-Date: Aug 05, 2025
-Notes: Added auto-well assignment and auto-sort by reaction
-    number to the bulk mode. Implemented basic functionality to generate the
-    validation table (Template 2 for sequencing), especially handy for pooled
-    samples.
+Version: 3.1
+Date: Aug 25, 2025
+Notes: Fixed issues in some combination of checkbox options that were applied
+    in the wrong order.
 '''
 ###############################################################################
 
@@ -142,59 +140,7 @@ with bulk_mode_tab:
                 st.warning("Please fill in at least one row with both 'Job_ID' and 'Vector_number'.")
             st.stop()
 
-        # 3. Handle Well Assignment and Pooling
-        if autowell_checkbox:
-            # --- AUTO-ASSIGN WELLS ---
-            if pool_checkbox:
-                # Auto-assign wells AND pool replicates
-                assigned_wells = {}
-                well_index = 0
-                seq_well_values = []
-
-                for i, row in active_df.iterrows():
-                    clone_id = row.get("Clone")
-                    clone_key = clone_id if pd.notna(clone_id) and clone_id != "" else f"__row_{i}"
-
-                    if clone_key in assigned_wells:
-                        seq_well_values.append(assigned_wells[clone_key])
-                    else:
-                        if well_index >= len(plate_wells_96):
-                            st.error(f"Error: More than {len(plate_wells_96)} unique clone groups found. Cannot assign to a 96-well plate.")
-                            st.stop()
-                        assigned_well = plate_wells_96[well_index]
-                        assigned_wells[clone_key] = assigned_well
-                        seq_well_values.append(assigned_well)
-                        well_index += 1
-                active_df["Seq_well"] = seq_well_values
-            else:
-                # Auto-assign wells, NO pooling
-                if len(active_df) > len(plate_wells_96):
-                    st.error(f"Error: There are {len(active_df)} samples, but only {len(plate_wells_96)} wells available on the plate.")
-                    st.stop()
-                active_df["Seq_well"] = plate_wells_96[:len(active_df)]
-        else:
-            # --- MANUAL WELL ASSIGNMENT ---
-            # Validation: Ensure Seq_well is filled
-            if active_df['Seq_well'].isnull().any() or (active_df['Seq_well'] == '').any():
-                st.error("Error: 'Auto-assign wells' is unchecked, but some rows are missing a 'Seq_well' value.")
-                st.stop()
-
-            if pool_checkbox:
-                # Manual wells AND pool replicates
-                # Validation: Check for consistency within clone groups
-                inconsistent_clones = []
-                # Filter out empty/NaN clones before grouping
-                clones_to_check = active_df[active_df['Clone'].notna() & (active_df['Clone'] != '')]
-                for clone_id, group in clones_to_check.groupby('Clone'):
-                    if group['Seq_well'].nunique() > 1:
-                        wells = ", ".join(group['Seq_well'].unique())
-                        inconsistent_clones.append(f"Clone '{clone_id}' has conflicting wells: {wells}")
-                
-                if inconsistent_clones:
-                    st.error("Error: 'Pool replicates' is checked, but there are inconsistencies in manual well assignments:\n\n" + "\n".join(inconsistent_clones))
-                    st.stop()
-
-        # 4. Handle Sorting (MOVED TO HERE)
+        # 3. PRE-SORT BY REACTION (IF ENABLED)
         if autosort_checkbox:
             # Validation for sorting
             if active_df['Seq_reactions'].isnull().any() or (active_df['Seq_reactions'] == '').any():
@@ -207,19 +153,78 @@ with bulk_mode_tab:
                 st.error("Error: 'Auto-sort' is checked, but the 'Seq_reactions' column contains non-numeric values.")
                 st.stop()
 
+            # Sort by reaction number. This establishes the primary order for auto-well assignment.
+            active_df = active_df.sort_values(by=['Seq_reactions'], ascending=False).reset_index(drop=True)
+
+        # 4. HANDLE WELL ASSIGNMENT AND POOLING
+        if autowell_checkbox:
+            # --- AUTO-ASSIGN WELLS ---
+            # This logic now runs on a dataframe that is pre-sorted by reaction number if auto-sort is on.
+            if pool_checkbox:
+                # Auto-assign wells AND pool replicates
+                assigned_wells = {}
+                well_index = 0
+                seq_well_values = []
+
+                for i, row in active_df.iterrows(): # Iterate over the now-sorted dataframe
+                    clone_id = row.get("Clone")
+                    clone_key = clone_id if pd.notna(clone_id) and clone_id != "" else f"__row_{i}"
+
+                    if clone_key in assigned_wells:
+                        seq_well_values.append(assigned_wells[clone_key])
+                    else:
+                        if well_index >= len(plate_wells_96): # Check against plate size
+                            st.error(f"Error: More than {len(plate_wells_96)} unique clone groups found. Cannot assign to a 96-well plate.")
+                            st.stop()
+                        assigned_well = plate_wells_96[well_index]
+                        assigned_wells[clone_key] = assigned_well
+                        seq_well_values.append(assigned_well)
+                        well_index += 1
+                active_df["Seq_well"] = seq_well_values # Assign the generated well list
+            else:
+                # Auto-assign wells, NO pooling
+                if len(active_df) > len(plate_wells_96):
+                    st.error(f"Error: There are {len(active_df)} samples, but only {len(plate_wells_96)} wells available on the plate.")
+                    st.stop()
+                # Assign wells sequentially to the (potentially sorted) dataframe
+                active_df["Seq_well"] = plate_wells_96[:len(active_df)]
+        else:
+            # --- MANUAL WELL ASSIGNMENT ---
+            # Validation: Ensure Seq_well is filled
+            if active_df['Seq_well'].isnull().any() or (active_df['Seq_well'] == '').any():
+                st.error("Error: 'Auto-assign wells' is unchecked, but some rows are missing a 'Seq_well' value.")
+                st.stop()
+
+            if pool_checkbox:
+                # Manual wells AND pool replicates
+                # Validation: Check for consistency within clone groups
+                inconsistent_clones = []
+                clones_to_check = active_df[active_df['Clone'].notna() & (active_df['Clone'] != '')]
+                for clone_id, group in clones_to_check.groupby('Clone'):
+                    if group['Seq_well'].nunique() > 1:
+                        wells = ", ".join(group['Seq_well'].unique())
+                        inconsistent_clones.append(f"Clone '{clone_id}' has conflicting wells: {wells}")
+
+                if inconsistent_clones:
+                    st.error("Error: 'Pool replicates' is checked, but there are inconsistencies in manual well assignments:\n\n" + "\n".join(inconsistent_clones))
+                    st.stop()
+
+        # 5. FINAL SORT (IF ENABLED)
+        # This step ensures the final output is sorted correctly, respecting both reaction and well.
+        if autosort_checkbox:
             # Ensure proper well sorting by converting to a categorical type
             active_df['Seq_well'] = pd.Categorical(active_df['Seq_well'], 
                                                     categories=plate_wells_96, 
                                                     ordered=True)
 
-            # Perform the double sort
+            # Perform the double sort. This now works for both manual and auto-assigned wells.
             active_df = active_df.sort_values(by=['Seq_reactions', 'Seq_well'], 
                                                 ascending=[False, True]).reset_index(drop=True)
             
             # Convert Seq_well back to a string for a clean output
             active_df['Seq_well'] = active_df['Seq_well'].astype(str)
 
-        # 5. Finalize the DataFrame for output
+        # 6. Finalize the DataFrame for output
         # Add constant values from the UI
         active_df["Source_spot"] = bm_source_spot
         active_df["Target_spot"] = bm_target_spot
@@ -237,7 +242,7 @@ with bulk_mode_tab:
         # Save the processed dataframe to session state for display
         st.session_state["bm_df"] = active_df
 
-        # 6. Prepare for display and download
+        # 7. Prepare for display and download
         # Get the updated df, keep only the automation string and rename column as the software utilises
         final_worklist2 = st.session_state["bm_df"]["Automation_string"]
         final_worklist2 = final_worklist2.rename("SampleID;SourceDeckPosition;SourceWell;TargetDeckPosition;TargetWell;TransferVolume [µl]")
